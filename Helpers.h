@@ -2,9 +2,7 @@
 #define __HELPERS_H__
 #define ABS(a) ((a) > 0 ? (a) : -1 * (a))
 #define EPSILON 0.000000001
-#include "Matrix4.h"
-#include "Vec3.h"
-#include "Vec4.h"
+#include "CENG477.hpp"
 
 /*
  * Calculate cross product of vec3 a, vec3 b and return resulting vec3.

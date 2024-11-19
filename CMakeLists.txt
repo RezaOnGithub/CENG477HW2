@@ -24,17 +24,8 @@ gtest_discover_tests(mixed_test)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(rasterizer
 	main_rasterizer.cpp 
-	Camera.cpp
-	Matrix4.cpp
 	Scene.cpp
-	Triangle.cpp
-	Color.cpp
-	Mesh.cpp
-	Vec3.cpp
 	Helpers.cpp
-	Rotation.cpp
 	tinyxml2.cpp
-	Vec4.cpp
-	Scaling.cpp
-	Translation.cpp
+	CENG477.cpp
 )

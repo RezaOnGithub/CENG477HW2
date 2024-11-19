@@ -1,13 +1,6 @@
 #ifndef _SCENE_H_
 #define _SCENE_H_
-#include "Vec3.h"
-#include "Vec4.h"
-#include "Color.h"
-#include "Rotation.h"
-#include "Scaling.h"
-#include "Translation.h"
-#include "Camera.h"
-#include "Mesh.h"
+#include "CENG477.hpp"
 #include <string>
 #include <vector>
 
@@ -31,7 +24,7 @@ public:
 	void initializeImage(Camera *camera);
 	int makeBetweenZeroAnd255(double value);
 	void writeImageToPPMFile(Camera *camera);
-	void convertPPMToPNG(std::string ppmFileName, int osType);
+	// void convertPPMToPNG(std::string ppmFileName, int osType);
 	void forwardRenderingPipeline(Camera *camera);
 };
 

@@ -8,7 +8,6 @@
 #include <cmath>
 
 #include "tinyxml2.h"
-#include "Triangle.h"
 #include "Helpers.h"
 #include "Scene.h"
 
@@ -238,7 +237,7 @@ Scene::Scene(const char *xmlPath)
 
 			if (result != EOF)
 			{
-				mesh->triangles.push_back(Triangle(v1, v2, v3));
+				mesh->triangles.push_back({v1, v2, v3});
 			}
 			row = strtok(NULL, "\n");
 		}
@@ -330,29 +329,29 @@ void Scene::writeImageToPPMFile(Camera *camera)
 	os_type == 2 		-> Windows
 	os_type == other	-> No conversion
 */
-void Scene::convertPPMToPNG(string ppmFileName, int osType)
-{
-	string command;
+// void Scene::convertPPMToPNG(string ppmFileName, int osType)
+// {
+// 	string command;
 
-	// call command on Ubuntu
-	if (osType == 1)
-	{
-		command = "./magick " + ppmFileName + " " + ppmFileName + ".png";
-		system(command.c_str());
-	}
+// 	// call command on Ubuntu
+// 	if (osType == 1)
+// 	{
+// 		command = "./magick " + ppmFileName + " " + ppmFileName + ".png";
+// 		system(command.c_str());
+// 	}
 
-	// call command on Windows
-	else if (osType == 2)
-	{
-		command = "magick " + ppmFileName + " " + ppmFileName + ".png";
-		system(command.c_str());
-	}
+// 	// call command on Windows
+// 	else if (osType == 2)
+// 	{
+// 		command = "magick " + ppmFileName + " " + ppmFileName + ".png";
+// 		system(command.c_str());
+// 	}
 
-	// default action - don't do conversion
-	else
-	{
-	}
-}
+// 	// default action - don't do conversion
+// 	else
+// 	{
+// 	}
+// }
 
 
 /*
