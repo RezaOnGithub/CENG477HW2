@@ -105,3 +105,26 @@ struct Scaling
     int scalingId;
     double sx, sy, sz;
 };
+
+class Scene
+{
+public:
+	Color backgroundColor;
+	bool cullingEnabled;
+
+	std::vector<std::vector<Color> > image;
+	std::vector<Camera *> cameras;
+	std::vector<Vec3 *> vertices;
+	std::vector<Color *> colorsOfVertices;
+	std::vector<Scaling *> scalings;
+	std::vector<Rotation *> rotations;
+	std::vector<Translation *> translations;
+	std::vector<Mesh *> meshes;
+
+	Scene(const char *xmlPath);
+
+	void initializeImage(Camera *camera);
+    void forwardRenderingPipeline(Camera *camera);
+	int makeBetweenZeroAnd255(double value);
+	void writeImageToPPMFile(Camera *camera);
+};

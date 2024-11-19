@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Scene.h"
+#include "CENG477.hpp"
 
 using namespace std;
 

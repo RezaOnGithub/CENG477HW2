@@ -20,11 +20,9 @@ add_executable(mixed_test test_everything.cpp)
 target_link_libraries(mixed_test GTest::gtest_main)
 gtest_discover_tests(mixed_test)
 
-# TODO this time it's a bit much -  reorganize project
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(rasterizer
 	main_rasterizer.cpp 
-	Scene.cpp
 	tinyxml2.cpp
 	CENG477.cpp
 )
