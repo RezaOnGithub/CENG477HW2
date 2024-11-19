@@ -1,0 +1,7 @@
+**/build/**
+**/cmake-build*/**
+**/__submission/**
+**/.venv/**
+**/__pycache__/**
+**/.cache/**
+**/.idea/**
