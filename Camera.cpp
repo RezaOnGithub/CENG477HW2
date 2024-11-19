@@ -2,7 +2,7 @@
 #include <iomanip>
 #include "Camera.h"
 
-Camera::Camera() {}
+Camera::Camera() = default;
 
 Camera::Camera(int cameraId,
                int projectionType,

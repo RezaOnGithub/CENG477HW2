@@ -1,5 +1,6 @@
 #ifndef __VEC3_H__
 #define __VEC3_H__
+#include <ostream>
 #define NO_COLOR -1
 
 class Vec3

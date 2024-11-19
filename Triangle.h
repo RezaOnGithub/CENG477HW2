@@ -1,6 +1,7 @@
 #ifndef __TRIANGLE_H__
 #define __TRIANGLE_H__
 
+#include <ostream>
 class Triangle
 {
 public:

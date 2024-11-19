@@ -8,6 +8,8 @@
 #include "Translation.h"
 #include "Camera.h"
 #include "Mesh.h"
+#include <string>
+#include <vector>
 
 class Scene
 {
