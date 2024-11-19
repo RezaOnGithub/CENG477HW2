@@ -6,6 +6,8 @@
 using std::string;
 using std::vector;
 
+constexpr double EPSILON = 0.000000001;
+
 struct Vec3
 {
     double x, y, z;
@@ -43,8 +45,6 @@ public:
             return this->t;
         }
     }
-
-    // friend std::ostream &operator<<(std::ostream &os, const Vec4 &v);
 };
 
 struct Triangle

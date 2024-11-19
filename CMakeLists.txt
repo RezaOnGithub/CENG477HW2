@@ -25,7 +25,6 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(rasterizer
 	main_rasterizer.cpp 
 	Scene.cpp
-	Helpers.cpp
 	tinyxml2.cpp
 	CENG477.cpp
 )

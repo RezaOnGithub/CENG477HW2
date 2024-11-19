@@ -8,11 +8,28 @@
 #include <cmath>
 
 #include "tinyxml2.h"
-#include "Helpers.h"
 #include "Scene.h"
 
 using namespace tinyxml2;
 using namespace std;
+
+Vec3 crossProductVec3(Vec3 a, Vec3 b)
+{
+    return Vec3(a.y * b.z - b.y * a.z, b.x * a.z - a.x * b.z, a.x * b.y - b.x * a.y);
+}
+double magnitudeOfVec3(Vec3 v)
+{
+    return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+Vec3 normalizeVec3(Vec3 v)
+{
+    double d = magnitudeOfVec3(v);
+    return Vec3(v.x / d, v.y / d, v.z / d);
+}
+Vec3 inverseVec3(Vec3 v)
+{
+    return Vec3(-v.x, -v.y, -v.z);
+}
 
 /*
 	Parses XML file
