@@ -9,14 +9,14 @@ public:
     double x, y, z;
     int colorId;
 
-    Vec3();
-    Vec3(double x, double y, double z);
-    Vec3(double x, double y, double z, int colorId);
-    Vec3(const Vec3 &other);
+    // Vec3();
+    // Vec3(double x, double y, double z);
+    // Vec3(double x, double y, double z, int colorId);
+    // Vec3(const Vec3 &other);
 
-    double getNthComponent(int n);
+    // double getNthComponent(int n);
 
-    friend std::ostream &operator<<(std::ostream &os, const Vec3 &v);
+    // friend std::ostream &operator<<(std::ostream &os, const Vec3 &v);
 };
 
 #endif
