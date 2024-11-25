@@ -16,8 +16,10 @@ add_compile_definitions(CENG477_RESOURCE="${CMAKE_CURRENT_SOURCE_DIR}/resource")
 
 enable_testing()
 include(GoogleTest)
-add_executable(mixed_test test_everything.cpp
-        Rasterizer.cpp)
+add_executable(mixed_test 
+        test_everything.cpp
+        Base.cpp
+)
 target_link_libraries(mixed_test GTest::gtest_main)
 gtest_discover_tests(mixed_test)
 
@@ -27,9 +29,11 @@ add_executable(rasterizer
         tinyxml2.cpp
         CENG477.cpp
         Rasterizer.cpp
+        Base.cpp
 )
 
 add_executable(visual_test
         main_visualtest.cpp
+        Base.cpp
 )
 target_link_libraries(visual_test raylib)
