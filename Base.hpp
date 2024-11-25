@@ -3,11 +3,11 @@
 #include <cstddef>
 #include <sys/types.h>
 
-using F = double;
+using fp = double;
 
 struct Vec3f
 {
-    F x, y, z;
+    fp x, y, z;
 
     constexpr double operator[](size_t i) const
     {
@@ -26,7 +26,7 @@ struct Vec3f
         }
     }
 
-    [[nodiscard]] constexpr Vec3f lerp(F a, F b) const
+    [[nodiscard]] constexpr Vec3f mapto(fp a, fp b) const
     {
         return { std::lerp(a, b, x), std::lerp(a, b, y), std::lerp(a, b, z) };
     }
@@ -56,7 +56,7 @@ struct Matrix3
 
 struct Vec4f
 {
-    F x, y, z, w;
+    fp x, y, z, w;
 
     constexpr double operator[](size_t i) const
     {
@@ -77,7 +77,7 @@ struct Vec4f
         }
     }
 
-    [[nodiscard]] constexpr Vec4f lerp(F a, F b) const
+    [[nodiscard]] constexpr Vec4f mapto(fp a, fp b) const
     {
         return { std::lerp(a, b, x), std::lerp(a, b, y), std::lerp(a, b, z),
                  std::lerp(a, b, w) };
@@ -122,11 +122,29 @@ struct Matrix4
     return { l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w };
 }
 
+[[nodiscard]] constexpr Vec4f scale(fp l, const Vec4f& r)
+{
+    return { l * r.x, l * r.y, l * r.z, l * r.w };
+}
+
+[[nodiscard]] constexpr Vec3f scale(fp l, const Vec3f& r)
+{
+    return { l * r.x, l * r.y, l * r.z };
+}
+
 struct Pixel
 {
     unsigned char r, g, b;
-    // [[nodiscard]] constexpr Pixel gamma_correction(F gamma) {}x
+
+    // [[nodiscard]] constexpr Pixel gamma_correction(F gamma) {}
 };
+
+[[nodiscard]] constexpr Pixel lerp(Pixel a, Pixel b, fp t)
+{
+    return { static_cast<unsigned char>(std::lerp(a.r, b.r, t)),
+             static_cast<unsigned char>(std::lerp(a.g, b.g, t)),
+             static_cast<unsigned char>(std::lerp(a.b, b.b, t)) };
+}
 
 // Store per-vertex data (hoping to use it for texture mapping and lighting
 // later). Three "types" of per-vertex data:
@@ -135,12 +153,11 @@ struct Pixel
 //      - smooth: perspective-correct interpolation
 //      - noperspective: lerp without taking perspective into account
 //      - closest: no interpolation, give the closest one (OpenGL doesn't have
-//      it) (UNUSED)
-//      - flat: no interpolation, give value for "provoking" vertex (OpenGL has
-//      it) (UNUSED)
+//      it)
+//      - flat: no interpolation, give value for "provoking" vertex (Unused)
 struct VertexPayload
 {
-    double noperspective_color;   // CENG477 specific
+    Pixel noperspective_color;   // CENG477 specific
     Vec3f noperspective_normal;
 };
 
@@ -158,7 +175,7 @@ struct Vertex
 
 struct FragmentPayload
 {
-    F depth;
+    fp depth;
     VertexPayload interp;
 };
 

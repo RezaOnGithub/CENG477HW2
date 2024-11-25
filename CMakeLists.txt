@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(thirdparty/raylib)
 # include_directories(thirdparty/include) # raygui, stb_image_write
 add_subdirectory(thirdparty/googletest)
-add_subdirectory(thirdparty/assimp)     # a model loading framework
+# add_subdirectory(thirdparty/assimp)     # a model loading framework
 
 add_compile_definitions(CENG477_RESOURCE="${CMAKE_CURRENT_SOURCE_DIR}/resource")
 
@@ -28,3 +28,8 @@ add_executable(rasterizer
         CENG477.cpp
         Rasterizer.cpp
 )
+
+add_executable(visual_test
+        main_visualtest.cpp
+)
+target_link_libraries(visual_test raylib)
