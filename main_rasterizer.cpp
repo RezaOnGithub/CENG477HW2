@@ -2,6 +2,7 @@
 #include "CENG477.hpp"
 
 using namespace std;
+using namespace ceng;
 
 Scene *scene;
 
