@@ -16,6 +16,8 @@
 using namespace tinyxml2;
 using namespace std;
 
+using namespace ceng;
+
 Vec3 crossProductVec3(Vec3 a, Vec3 b)
 {
     return Vec3(a.y * b.z - b.y * a.z, b.x * a.z - a.x * b.z, a.x * b.y - b.x * a.y);

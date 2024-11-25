@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.28)
+cmake_minimum_required(VERSION 3.28)
 project(raytracer C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug)
@@ -16,13 +16,15 @@ add_compile_definitions(CENG477_RESOURCE="${CMAKE_CURRENT_SOURCE_DIR}/resource")
 
 enable_testing()
 include(GoogleTest)
-add_executable(mixed_test test_everything.cpp)
+add_executable(mixed_test test_everything.cpp
+        Rasterizer.cpp)
 target_link_libraries(mixed_test GTest::gtest_main)
 gtest_discover_tests(mixed_test)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(rasterizer
-	main_rasterizer.cpp 
-	tinyxml2.cpp
-	CENG477.cpp
+        main_rasterizer.cpp
+        tinyxml2.cpp
+        CENG477.cpp
+        Rasterizer.cpp
 )
