@@ -13,13 +13,11 @@ Vec3f normalize(const Vec3f& a)   // TODO: maybe pass by value for performance?
 
 Matrix4 homotranslate(const Vec3f& disp)
 {
-    // TODO column vectors are unintuitive now!
-    return {
-        {1,       0,      0,      0},
-        { 0,      1,      0,      0},
-        { 0,      0,      1,      0},
-        { disp.x, disp.y, disp.z, 1}
+    // disp stands for "displacement"
+    const Matrix4 t = {
+        {}
     };
+    return t.transpose();
 }
 
 Matrix4 homorotate(double ccw_angle, const Ray& axis)

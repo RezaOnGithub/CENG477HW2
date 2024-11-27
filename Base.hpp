@@ -7,6 +7,12 @@ namespace m
 
 using fp = double;
 
+// declerations needed for constexpr
+struct Vec3f;
+struct Vec4f;
+constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs);
+constexpr fp dot(const Vec4f& lhs, const Vec4f& rhs);
+
 struct Vec3f
 {
     fp x, y, z;
@@ -38,11 +44,6 @@ struct Vec3f
         return { x * a, y * a, z * a };
     }
 };
-
-[[nodiscard]] constexpr fp dot(const Vec3f& v, const Vec3f& w)
-{
-    return v.x * w.x + v.y * w.y + v.z * w.z;
-}
 
 struct Ray
 {
@@ -107,11 +108,15 @@ struct Vec4f
     }
 };
 
+// TODO Design Mistake: because I was too lazy to write a row-oriented
+// constructor, there are places I write things in row format (visually more
+// intuitive/standard) but then have to transpose Make sure a transpose takes
+// place in such spots!
 struct Matrix4
 {
     Vec4f c0, c1, c2, c3;
 
-    [[nodiscard]] constexpr Vec4f operator[](size_t i) const
+    [[nodiscard]] constexpr Vec4f column(size_t i) const
     {
         switch (i)
         {
@@ -129,7 +134,50 @@ struct Matrix4
             return { NAN, NAN, NAN, NAN };
         }
     }
+
+    [[nodiscard]] constexpr Vec4f row(size_t i) const
+    {
+        return { c0[i], c1[i], c2[i], c3[i] };
+    }
+
+    [[nodiscard]] constexpr Matrix4 transpose() const
+    {
+        return { row(0), row(1), row(2), row(3) };
+    }
+
+    [[nodiscard]] constexpr Vec4f operator[](size_t i) const
+    {
+        return row(i);
+    }
+
+    [[nodiscard]] constexpr Matrix4 operator*(const Matrix4& rhs) const
+    {
+        // because operator[] does not return a reference, can't write it in
+        // loop form
+        const auto& self = *this;
+        auto rc = [self, rhs](size_t i, size_t j) constexpr
+        {
+            return dot(self.row(i), rhs.column(j));
+        };
+        const Matrix4 t {
+            {rc(0,  0), rc(0, 1), rc(0, 2), rc(0, 3)},
+            { rc(1, 0), rc(1, 1), rc(1, 2), rc(1, 3)},
+            { rc(2, 0), rc(2, 1), rc(2, 2), rc(2, 3)},
+            { rc(3, 0), rc(3, 1), rc(3, 2), rc(3, 3)},
+        };
+        return t.transpose();
+    }
 };
+
+[[nodiscard]] constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs)
+{
+    return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
+}
+
+[[nodiscard]] constexpr fp dot(const Vec4f& lhs, const Vec4f& rhs)
+{
+    return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z + lhs.w * rhs.w;
+}
 
 [[nodiscard]] constexpr Vec3f pointwise(const Vec3f& l, const Vec3f& r)
 {
