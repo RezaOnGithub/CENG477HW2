@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "Renderer.hpp"
+
 constexpr double w = 600;
 constexpr double h = 600;
 
