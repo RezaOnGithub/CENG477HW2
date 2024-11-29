@@ -16,7 +16,7 @@
 using namespace tinyxml2;
 using namespace std;
 
-using namespace ceng;
+namespace ceng {
 
 Vec3 crossProductVec3(Vec3 a, Vec3 b)
 {
@@ -350,4 +350,5 @@ void Scene::forwardRenderingPipeline(Camera *camera)
 	// TODO: Implement this function
 }
 
+};
 //NOLINTEND
