@@ -17,13 +17,12 @@ struct VertexAttribute
     Vec3f noperspective_normal;
 };
 
-// TODO making payload const ... somehow ... to avoid ever editing it
 struct Vertex
 {
     Vec3f c;
     VertexAttribute payload;
 
-    constexpr double operator[](size_t i) const
+    double operator[](size_t i) const
     {
         return c[i];
     }
@@ -44,10 +43,7 @@ struct Fragment
     Vec3f clipspace;
     FragmentAttribute payload;
 
-    constexpr double operator[](size_t i) const
-    {
-        return clipspace[i];
-    }
+    double operator[](const size_t i) const;
 };
 
 class Rasterizer
