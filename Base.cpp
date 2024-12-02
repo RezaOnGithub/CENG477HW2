@@ -270,9 +270,7 @@ Matrix4 Matrix4::invert() const
     }
     // dprint("matrix of cofactors ", Matrix4::from_rows(rows_cofactors));
     // dprint("matrix determinant is ", det());
-    return Matrix4::from_rows(rows_cofactors)
-        .transpose()
-        .scale(1 / det());
+    return Matrix4::from_rows(rows_cofactors).transpose().scale(1 / det());
 }
 
 /*****************************************************************************/
@@ -353,7 +351,9 @@ Matrix4 homorotate(const fp ccw_angle, const Ray& axis)
     Vec3f u = normalize(axis.v);
     const Matrix4 step1_translate_away_from_origin =
         homotranslate(axis.o.scale(-1));
-    const fp a = u.x, b = u.y, c = u.z;
+    const fp a = u.x;
+    const fp b = u.y;
+    const fp c = u.z;
     const fp d = sqrt(b * b + c * c);
     Matrix4 step2_axis_to_zx = Matrix4::i4();
     // handle cases where axis is already on zx-plane
@@ -383,13 +383,13 @@ Matrix4 homorotate(const fp ccw_angle, const Ray& axis)
     const Matrix4 step5_undo_step3 = step3_axis_to_z.invert();
     const Matrix4 step6_undo_step2 = step2_axis_to_zx.invert();
     const Matrix4 step7_undo_step1 = step1_translate_away_from_origin.invert();
-    dprint("step1", step1_translate_away_from_origin);
-    dprint("step2", step2_axis_to_zx);
-    dprint("step3", step3_axis_to_z);
-    dprint("step4", step4_desired_rotation);
-    dprint("step5", step5_undo_step3);
-    dprint("step6", step6_undo_step2);
-    dprint("step7", step7_undo_step1);
+    // dprint("step1", step1_translate_away_from_origin);
+    // dprint("step2", step2_axis_to_zx);
+    // dprint("step3", step3_axis_to_z);
+    // dprint("step4", step4_desired_rotation);
+    // dprint("step5", step5_undo_step3);
+    // dprint("step6", step6_undo_step2);
+    // dprint("step7", step7_undo_step1);
     return step7_undo_step1 * step6_undo_step2 * step5_undo_step3 *
            step4_desired_rotation * step3_axis_to_z * step2_axis_to_zx *
            step1_translate_away_from_origin;
