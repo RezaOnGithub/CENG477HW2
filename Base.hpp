@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <vector>
 
 namespace m
 {
@@ -31,10 +32,10 @@ struct Vec3f
     fp x, y, z;
 
     double operator[](size_t i) const;
-    Vec3f  mapto(fp a, fp b) const;
-    Vec3f  scale(fp a) const;
-    Vec4f  homopoint(fp w = 1) const;
-    Vec4f  homovector() const;
+    Vec3f mapto(fp a, fp b) const;
+    Vec3f scale(fp a) const;
+    Vec4f homopoint(fp w = 1) const;
+    Vec4f homovector() const;
 };
 
 struct Vec4f
@@ -42,9 +43,9 @@ struct Vec4f
     fp x, y, z, w;
 
     double operator[](size_t i) const;
-    Vec4f  mapto(fp a, fp b) const;
-    Vec4f  scale(fp a) const;
-    fp     row(size_t i) const;
+    Vec4f mapto(fp a, fp b) const;
+    Vec4f scale(fp a) const;
+    fp row(size_t i) const;
 };
 
 struct Ray
@@ -59,7 +60,7 @@ struct LineSegment
     Vec3f end;
 
     // Right-Handed Normal
-    fp    line_equation(fp x);
+    fp line_equation(fp x);
     Vec2f normal();
 };
 
@@ -73,27 +74,82 @@ struct Box
     fp maxy() const;
 };
 
-struct Matrix3
+class Matrix3
 {
+private:
+    inline Matrix3(Vec3f a, Vec3f b, Vec3f c) :
+        c0(a),
+        c1(b),
+        c2(c)
+    {
+    }
+public:
     Vec3f c0, c1, c2;
 
-    Vec3f   column(size_t i) const;
-    Vec3f   row(size_t i) const;
-    fp      det() const;
+    static inline Matrix3 from_columns(const std::vector<Vec3f>& m)
+    {
+        return { m[0], m[1], m[2] };
+    }
+
+    static inline Matrix3 from_rows(const std::vector<Vec3f>& t)
+    {
+        return from_columns(t).transpose();
+    }
+
+    static inline Matrix3 i3()
+    {
+        return {
+            {1,  0, 0},
+            { 0, 1, 0},
+            { 0, 0, 1},
+        };
+    }
+
+    Vec3f column(size_t i) const;
+    Vec3f row(size_t i) const;
+    fp det() const;
     Matrix3 transpose() const;
 };
 
-// TODO column-major not intuitive! write a row-major constructor!
-struct Matrix4
+class Matrix4
 {
+private:
+    inline Matrix4(Vec4f a, Vec4f b, Vec4f c, Vec4f d) :
+        c0(a),
+        c1(b),
+        c2(c),
+        c3(d)
+    {
+    }
+public:
     Vec4f c0, c1, c2, c3;
 
-    Vec4f   column(size_t i) const;
-    Vec4f   row(size_t i) const;
+    static inline Matrix4 from_columns(const std::vector<Vec4f>& m)
+    {
+        return { m[0], m[1], m[2], m[3] };
+    }
+
+    static inline Matrix4 from_rows(const std::vector<Vec4f>& t)
+    {
+        return from_columns(t).transpose();
+    }
+
+    static inline Matrix4 i4()
+    {
+        return {
+            {1,  0, 0, 0},
+            { 0, 1, 0, 0},
+            { 0, 0, 1, 0},
+            { 0, 0, 0, 1}
+        };
+    }
+
+    Vec4f column(size_t i) const;
+    Vec4f row(size_t i) const;
     Matrix4 transpose() const;
     Matrix4 operator*(const Matrix4& rhs) const;
-    fp      minor(size_t row, size_t col) const;
-    fp      det() const;
+    fp minor(size_t row, size_t col) const;
+    fp det() const;
     Matrix4 scale(fp fp);
     Matrix4 invert() const;
 };
@@ -102,7 +158,7 @@ struct Matrix4
 // function forward declerations
 /*****************************************************************************/
 
-Vec3f   normalize(const Vec3f& a);
+Vec3f normalize(const Vec3f& a);
 Matrix4 homotranslate(const Vec3f& additive);
 Matrix4 homorotate(double ccw_angle, const Ray& axis);
 
