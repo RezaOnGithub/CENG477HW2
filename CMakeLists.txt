@@ -11,6 +11,7 @@ add_subdirectory(thirdparty/raylib)
 # include_directories(thirdparty/include) # raygui, stb_image_write
 add_subdirectory(thirdparty/googletest)
 # add_subdirectory(thirdparty/assimp)     # a model loading framework
+add_subdirectory(thirdparty/glm) # to check my math!
 
 add_compile_definitions(CENG477_RESOURCE="${CMAKE_CURRENT_SOURCE_DIR}/resource")
 
@@ -21,6 +22,7 @@ add_executable(mixed_test
         Base.cpp
 )
 target_link_libraries(mixed_test GTest::gtest_main)
+target_link_libraries(mixed_test glm::glm)
 gtest_discover_tests(mixed_test)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")

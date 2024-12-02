@@ -1,7 +1,10 @@
 #include "Base.hpp"
 
 #include <cmath>
+#include <cstddef>
+#include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace m
@@ -125,10 +128,38 @@ Vec3f Matrix3::column(size_t i) const
 fp Matrix3::det() const
 {
     const auto r = row(0);
-    const auto d0 = c1[1] * c2[2] - c2[1] * c1[2];
-    const auto d1 = c0[1] * c2[2] - c2[1] * c0[2];
-    const auto d2 = c0[1] * c1[2] - c1[1] * c0[2];
-    return r[0] * d0 - r[1] * d1 + r[2] * d2;
+    // dprint("the chosen row", r);
+    // dprint("minor #1 ", minor({ 0, 0 }));
+    // dprint("minor #2 ", minor({ 0, 1 }));
+    // dprint("minor #3 ", minor({ 0, 2 }));
+
+    return r[0] * minor({ 0, 0 }) - r[1] * minor({ 0, 1 }) +
+           r[2] * minor({ 0, 2 });
+}
+
+fp Matrix3::minor(IndexPair x) const
+{
+    std::vector<IndexPair> p {};
+    for (size_t i = 0; i < 3; i++)
+    {
+        if (not(i == x.row))
+        {
+            for (size_t j = 0; j < 3; j++)
+            {
+                if (not(j == x.column))
+                {
+                    // printf("\t\t%lu %lu\n", i, j);
+                    p.emplace_back(IndexPair { i, j });
+                }
+            }
+        }
+    }
+    const auto reduced = Matrix2::from_rows({
+        {rc(p[0]),  rc(p[1])},
+        { rc(p[2]), rc(p[3])}
+    });
+    // dprint("reduced matrix for the current minor ", reduced);
+    return reduced.det();
 }
 
 Matrix3 Matrix3::transpose() const
@@ -179,43 +210,37 @@ Matrix4 Matrix4::operator*(const Matrix4& rhs) const
         return dot(self.row(i), rhs.column(j));
     };
     return Matrix4::from_rows({
-                                  {rc(0,  0), rc(0, 1), rc(0, 2), rc(0, 3)},
-                                  { rc(1, 0), rc(1, 1), rc(1, 2), rc(1, 3)},
-                                  { rc(2, 0), rc(2, 1), rc(2, 2), rc(2, 3)},
-                                  { rc(3, 0), rc(3, 1), rc(3, 2), rc(3, 3)},
-    })
-        .transpose();
+        {rc(0,  0), rc(0, 1), rc(0, 2), rc(0, 3)},
+        { rc(1, 0), rc(1, 1), rc(1, 2), rc(1, 3)},
+        { rc(2, 0), rc(2, 1), rc(2, 2), rc(2, 3)},
+        { rc(3, 0), rc(3, 1), rc(3, 2), rc(3, 3)},
+    });
 }
 
-fp Matrix4::minor(size_t r, size_t c) const
+fp Matrix4::minor(IndexPair x) const
 {
-    std::vector<std::pair<size_t, size_t>> p {};
-    for (int i = 0; i < 4; ++i)
+    std::vector<IndexPair> p {};
+    for (size_t i = 0; i < 4; ++i)
     {
-        if (i == r)
+        if (i == x.row)
         {
             continue;
         }
-        for (int j = 0; j < 4; j++)
+        for (size_t j = 0; j < 4; j++)
         {
-            if (j == c)
+            if (j == x.column)
             {
                 continue;
             }
-            p.push_back({ i, j });
+            const IndexPair pair { i, j };
+            p.emplace_back(pair);
         }
     }
 
     return Matrix3::from_rows({
-                                  {column(p[0].first).row(p[0].second),
-                                   column(p[1].first).row(p[1].second),
-                                   column(p[2].first).row(p[2].second)},
-                                  { column(p[3].first).row(p[3].second),
-                                   column(p[4].first).row(p[4].second),
-                                   column(p[5].first).row(p[5].second)},
-                                  { column(p[6].first).row(p[6].second),
-                                   column(p[7].first).row(p[7].second),
-                                   column(p[8].first).row(p[8].second)},
+                                  {rc(p[0]),  rc(p[1]), rc(p[2])},
+                                  { rc(p[3]), rc(p[4]), rc(p[5])},
+                                  { rc(p[6]), rc(p[7]), rc(p[8])},
     })
         .det();
 }
@@ -223,61 +248,36 @@ fp Matrix4::minor(size_t r, size_t c) const
 fp Matrix4::det() const
 {
     const auto primary = row(0);
-    const auto minor = [this](const int pos)
-    {
-        std::vector<Vec4f> c {};
-        for (int x = 0; x < 4; ++x)
-        {
-            if (x == pos)
-                continue;
-            c.push_back(column(x));
-        }
-        return Matrix3::from_rows(
-                   {
-                       {c[0].row(1),  c[1].row(1), c[2].row(1)},
-                       { c[0].row(2), c[1].row(2), c[2].row(2)},
-                       { c[0].row(3), c[1].row(3), c[2].row(3)}
-        })
-            .det();
-    };
-    return primary[0] * minor(0) - primary[1] * minor(1) +
-           primary[2] * minor(2) - primary[3] * minor(3);
+    return primary[0] * minor({ 0, 0 }) - primary[1] * minor({ 0, 1 }) +
+           primary[2] * minor({ 0, 2 }) - primary[3] * minor({ 0, 3 });
 }
 
-Matrix4 Matrix4::scale(fp fp)
+Matrix4 Matrix4::scale(fp fp) const
 {
     return { c0.scale(fp), c1.scale(fp), c2.scale(fp), c3.scale(fp) };
 }
 
 Matrix4 Matrix4::invert() const
 {
-    return Matrix4::from_columns(
-               {
-                   {minor(0,  0), minor(0, 1), minor(0, 2), minor(0, 3)},
-                   { minor(1, 0), minor(1, 1), minor(1, 2), minor(1, 3)},
-                   { minor(2, 0), minor(2, 1), minor(2, 2), minor(2, 3)},
-                   { minor(3, 0), minor(3, 1), minor(3, 2), minor(3, 3)}
-    })
+    std::vector<Vec4f> rows_cofactors {};
+    for (size_t i = 0; i < 4; i++)
+    {
+        const fp s = (i % 2) != 0u ? -1 : 1;
+        const Vec4f sign = { s, -s, s, -s };
+        const Vec4f x { minor({ i, 0 }), minor({ i, 1 }), minor({ i, 2 }),
+                        minor({ i, 3 }) };
+        rows_cofactors.push_back(pointwise(x, sign));
+    }
+    // dprint("matrix of cofactors ", Matrix4::from_rows(rows_cofactors));
+    // dprint("matrix determinant is ", det());
+    return Matrix4::from_rows(rows_cofactors)
+        .transpose()
         .scale(1 / det());
 }
 
 /*****************************************************************************/
 // Functions - Misc
 /*****************************************************************************/
-
-Vec3f pointwise(const Vec3f& l, const Vec3f& r)
-{
-    return {
-        l.x * r.x,
-        l.y * r.y,
-        l.z * r.z,
-    };
-}
-
-Vec4f pointwise(const Vec4f& l, const Vec4f& r)
-{
-    return { l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w };
-}
 
 Vec4f scale(fp l, const Vec4f& r)
 {

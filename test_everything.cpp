@@ -1,7 +1,23 @@
 #include "Base.hpp"
 #include "CENG477.hpp"
 
+#include <cstddef>
+#include <glm/glm.hpp>
+#include <glm/matrix.hpp>
 #include <gtest/gtest.h>
+#include <iostream>
+
+m::Matrix4 glm2base(glm::mat4 t)
+{
+    using namespace m;
+    std::vector<Vec4f> c {};
+
+    for (int x = 0; x < 4; x++)
+    {
+        c.push_back({ t[x][0], t[x][1], t[x][2], t[x][3] });
+    }
+    return Matrix4::from_columns(c);
+}
 
 // I don't think this test is needed
 TEST(Basic, HelloTesting)
@@ -51,12 +67,19 @@ TEST(Basic, Matrix3Det3)
 TEST(Basic, Matrix3Det4)
 {
     using namespace m;
-    Matrix3 mat = Matrix3::from_rows({
+    auto mat = Matrix3::from_rows({
         {1,  2, 3},
         { 4, 5, 6},
         { 7, 8, 9}
     });
-    EXPECT_EQ(0, mat.det());
+    dprint("matrix in question", mat);
+    fp res = mat.det();
+    fp expected = glm::determinant(glm::mat4({
+        {1,  2, 3},
+        { 4, 5, 6},
+        { 7, 8, 9}
+    }));
+    EXPECT_EQ(res, expected);
 }
 
 TEST(Basic, Matrix4Mul1)
@@ -136,13 +159,13 @@ TEST(Basic, Matrix4Invert1)
 {
     using namespace m;
     Matrix4 res = Matrix4::i4().invert();
-    for (int i = 0; i < 4; i++)
+    dprint("result of inverting identity4 ", res);
+    for (size_t i = 0; i < 4; i++)
     {
-        for (int j = 0; j < 4; j++)
+        for (size_t j = 0; j < 4; j++)
         {
             // printf("i = %d \t j = %d\n", i, j);
-            EXPECT_FLOAT_EQ(res.column(i).row(j),
-                            Matrix4::i4().column(i).row(j));
+            EXPECT_FLOAT_EQ(res.rc({ i, j }), Matrix4::i4().rc({ i, j }));
         }
     }
 }
@@ -156,13 +179,15 @@ TEST(Basic, Matrix4Invert2)
         { 1, 0, 0,  0},
         { 0, 0, 0,  1}
     });
-    Matrix4 expected = Matrix4::from_rows({
-        {0,   0, 1, 0},
-        { 0,  1, 0, 0},
-        { -1, 0, 0, 0},
-        { 0,  0, 0, 1},
-    });
+    const auto expected = glm2base(glm::inverse(glm::transpose(glm::mat4({
+        {0,  0, -1, 0},
+        { 0, 1, 0,  0},
+        { 1, 0, 0,  0},
+        { 0, 0, 0,  1}
+    }))));
+    dprint("expected matrix", expected);
     Matrix4 res = t.invert();
+    dprint("resultant matrix (probably wrong) ", res);
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)

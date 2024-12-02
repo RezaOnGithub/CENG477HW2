@@ -1,7 +1,7 @@
 #pragma once
-#include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <string>
 #include <vector>
 
 namespace m
@@ -10,7 +10,7 @@ namespace m
 using fp = double;
 
 /*****************************************************************************/
-// structs and method forward declerations
+// struct forward declerations
 /*****************************************************************************/
 
 struct Pixel
@@ -21,17 +21,92 @@ struct Pixel
 struct Vec2f;
 struct Vec3f;
 struct Vec4f;
+struct Matrix2;
+struct Matrix3;
+struct Matrix4;
+
+struct Ray;
+struct Box;
+struct LineSegment;
+
+struct IndexPair
+{
+    size_t row, column;
+};
+
+/*****************************************************************************/
+// function forward declerations
+/*****************************************************************************/
+
+Vec3f normalize(const Vec3f& a);
+Matrix4 homotranslate(const Vec3f& additive);
+Matrix4 homorotate(double ccw_angle, const Ray& axis);
+
+constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs);
+constexpr fp dot(const Vec4f& lhs, const Vec4f& rhs);
+constexpr Vec3f pointwise(const Vec3f& lhs, const Vec3f& rhs);
+constexpr Vec4f pointwise(const Vec4f& lhs, const Vec4f& rhs);
+
+/*****************************************************************************/
+// debug forward decleration
+// TODO comment these out!
+/*****************************************************************************/
+
+void dprint(const char* s, const Vec2f& m);
+void dprint(const char* s, const Vec3f& m);
+void dprint(const char* s, const Vec4f& m);
+void dprint(const char* s, const Matrix2& m);
+void dprint(const char* s, const Matrix3& m);
+void dprint(const char* s, const Matrix4& m);
+
+/*****************************************************************************/
+// struct definition, method declerations
+/*****************************************************************************/
 
 struct Vec2f
 {
     fp x, y;
+
+    inline fp operator[](size_t i) const
+    {
+        switch (i)
+        {
+        case 0 :
+            return x;
+        case 1 :
+            return y;
+        default :
+            throw std::string("Invalid Index!");
+        }
+    }
+
+    inline fp row(size_t i) const
+    {
+        return (*this)[i];
+    }
 };
 
 struct Vec3f
 {
     fp x, y, z;
 
-    double operator[](size_t i) const;
+    fp operator[](size_t i) const;
+
+    inline fp row(size_t i) const
+    {
+        switch (i)
+        {
+        case 0 :
+            return x;
+        case 1 :
+            return y;
+        case 2 :
+            return z;
+        default :
+            throw std::string("Invalid String!");
+        }
+    };
+
     Vec3f mapto(fp a, fp b) const;
     Vec3f scale(fp a) const;
     Vec4f homopoint(fp w = 1) const;
@@ -74,6 +149,46 @@ struct Box
     fp maxy() const;
 };
 
+class Matrix2
+{
+private:
+    inline Matrix2(Vec2f a, Vec2f b) :
+        c0(a),
+        c1(b)
+    {
+    }
+public:
+    Vec2f c0, c1;
+
+    static inline Matrix2 from_rows(const std::vector<Vec2f>& t)
+    {
+        return Matrix2({ t[0][0], t[1][0] }, { t[0][1], t[1][1] });
+    }
+
+    inline fp det() const
+    {
+        return c0[0] * c1[1] - c0[1] * c1[0];
+    }
+
+    inline Vec2f column(size_t i) const
+    {
+        switch (i)
+        {
+        case 0 :
+            return c0;
+        case 1 :
+            return c1;
+        default :
+            throw std::string("Invalid Index!");
+        }
+    }
+
+    inline fp rc(IndexPair x) const
+    {
+        return column(x.column).row(x.row);
+    }
+};
+
 class Matrix3
 {
 private:
@@ -105,9 +220,18 @@ public:
         };
     }
 
+    inline fp rc(IndexPair x) const
+    {
+        // printf("ROW %lu COLUMN %lu\t:\t%f\n", x.row, x.column,
+        //        column(x.column).row(x.row));
+        // dprint("\t\t rc Column", column(x.column));
+        return column(x.column).row(x.row);
+    }
+
     Vec3f column(size_t i) const;
     Vec3f row(size_t i) const;
     fp det() const;
+    fp minor(IndexPair x) const;
     Matrix3 transpose() const;
 };
 
@@ -144,26 +268,20 @@ public:
         };
     }
 
+    inline fp rc(IndexPair x) const
+    {
+        return column(x.column).row(x.row);
+    }
+
     Vec4f column(size_t i) const;
     Vec4f row(size_t i) const;
     Matrix4 transpose() const;
     Matrix4 operator*(const Matrix4& rhs) const;
-    fp minor(size_t row, size_t col) const;
+    fp minor(IndexPair x) const;
     fp det() const;
-    Matrix4 scale(fp fp);
+    Matrix4 scale(fp fp) const;
     Matrix4 invert() const;
 };
-
-/*****************************************************************************/
-// function forward declerations
-/*****************************************************************************/
-
-Vec3f normalize(const Vec3f& a);
-Matrix4 homotranslate(const Vec3f& additive);
-Matrix4 homorotate(double ccw_angle, const Ray& axis);
-
-constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs);
-constexpr fp dot(const Vec4f& lhs, const Vec4f& rhs);
 
 /*****************************************************************************/
 // constexpr function implementation
@@ -179,13 +297,18 @@ constexpr fp dot(const Vec4f& lhs, const Vec4f& rhs)
     return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z + lhs.w * rhs.w;
 }
 
-/*****************************************************************************/
-// constexpr method implementation
-/*****************************************************************************/
+constexpr Vec3f pointwise(const Vec3f& lhs, const Vec3f& rhs)
+{
+    return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
+}
+
+constexpr Vec4f pointwise(const Vec4f& lhs, const Vec4f& rhs)
+{
+    return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w };
+}
 
 /*****************************************************************************/
-// for debugging
-// TODO comment these out when done!
+// misc
 /*****************************************************************************/
 
 inline bool eq_within(const float& i, const float& j, const float& ep)
@@ -194,17 +317,73 @@ inline bool eq_within(const float& i, const float& j, const float& ep)
     return i > j ? i - j <= ep : j - i <= ep;
 }
 
+/*****************************************************************************/
+// for debugging
+// TODO comment these out when done!
+/*****************************************************************************/
+
 inline void dprint(const char* const s, const Matrix4& m)
 {
     printf("Matrix4 %s:\n", s);
-    for (int i = 0; i < 4; i++)
+    for (size_t i = 0; i < 4; i++)
     {
-        for (int j = 0; j < 4; j++)
+        for (size_t j = 0; j < 4; j++)
         {
-            printf("\t%f\t", m.column(j).row(i));
+            printf("\t%f\t", m.rc({ i, j }));
         }
         puts("");
     }
+}
+
+inline void dprint(const char* const s, const Matrix3& m)
+{
+    printf("Matrix3 %s:\n", s);
+    for (size_t i = 0; i < 3; i++)
+    {
+        for (size_t j = 0; j < 3; j++)
+        {
+            printf("\t%f\t", m.rc({ i, j }));
+        }
+        puts("");
+    }
+}
+
+inline void dprint(const char* const s, const Matrix2& m)
+{
+    printf("Matrix2 %s:\n", s);
+    for (size_t i = 0; i < 2; i++)
+    {
+        for (size_t j = 0; j < 2; j++)
+        {
+            printf("\t%f\t", m.rc({ i, j }));
+        }
+        puts("");
+    }
+}
+
+inline void dprint(const char* const s, const Vec4f& m)
+{
+    printf("Vec4f %s:\n", s);
+    for (size_t i = 0; i < 4; i++)
+    {
+        printf("\t%f\n", m.row(i));
+    }
+    puts("");
+}
+
+inline void dprint(const char* const s, const Vec3f& m)
+{
+    printf("Vec3f %s:\n", s);
+    for (size_t i = 0; i < 3; i++)
+    {
+        printf("\t%f\n", m.row(i));
+    }
+    puts("");
+}
+
+inline void dprint(const char* const s, fp m)
+{
+    printf("double %s:\t%f\n", s, m);
 }
 
 }   // namespace m
