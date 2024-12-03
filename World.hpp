@@ -87,13 +87,6 @@ struct ViewConfig
     long pixel_grid_columns;
 };
 
-static const ViewConfig sample_view { "sample_view.ppm",
-                                      m::Matrix4::from_rows({
-                                        m::Vec3f({}).homovector(),
-
-                                      }).invert(),
-                                      m::Matrix4::from_rows({}), 800, 600 };
-
 struct World
 {
 public:
