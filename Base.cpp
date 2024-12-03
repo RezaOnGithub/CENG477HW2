@@ -312,6 +312,19 @@ Vec3f normalize(const Vec3f& a)
     return { a.x / len, a.y / len, a.z / len };
 }
 
+Vec3f barycentric(const Vec2f& a, const Vec2f& b, const Vec2f& c,
+                  const Vec2f& p)
+{
+    const Matrix2 solve = Matrix2::from_rows({
+                                                 {b.x - a.x,  c.x - a.x},
+                                                 { b.y - a.y, c.y - a.y}
+    })
+                              .invert();
+
+    const Vec2f bc = solve * p;
+    return { 1 - bc.x - bc.y, bc.x, bc.y };
+}
+
 /*****************************************************************************/
 // Functions - Transformations
 /*****************************************************************************/
@@ -406,5 +419,4 @@ Matrix4 homorotate(const fp ccw_angle, const Ray& axis)
            step4_desired_rotation * step3_axis_to_z * step2_axis_to_zx *
            step1_translate_away_from_origin;
 }
-
 };   // namespace m

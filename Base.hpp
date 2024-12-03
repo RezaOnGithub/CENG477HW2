@@ -42,6 +42,7 @@ Vec3f normalize(const Vec3f& a);
 Matrix4 homotranslate(const Vec3f& additive);
 Matrix4 homorotate(double ccw_angle, const Ray& axis);
 
+constexpr fp dot(const Vec2f& lhs, const Vec2f& rhs);
 constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs);
 constexpr fp dot(const Vec4f& lhs, const Vec4f& rhs);
 constexpr Vec3f pointwise(const Vec3f& lhs, const Vec3f& rhs);
@@ -83,6 +84,11 @@ struct Vec2f
     inline fp row(size_t i) const
     {
         return (*this)[i];
+    }
+
+    inline Vec2f scale(fp s) const
+    {
+        return { x * s, y * s };
     }
 };
 
@@ -150,6 +156,13 @@ public:
         return c0[0] * c1[1] - c0[1] * c1[0];
     }
 
+    inline Matrix2 invert() const
+    {
+        return Matrix2::from_rows(
+            { Vec2f(column(1).row(1), column(1).row(0)).scale(1.0 / det()),
+              Vec2f(column(0).row(1), column(0).row(0)).scale(1.0 / det()) });
+    }
+
     inline Vec2f column(size_t i) const
     {
         switch (i)
@@ -161,6 +174,16 @@ public:
         default :
             throw std::string("Invalid Index!");
         }
+    }
+
+    inline Vec2f row(size_t i) const
+    {
+        return {column(0).row(i), column(1).row(i)};
+    }
+
+    inline Vec2f operator*(const Vec2f& v) const
+    {
+        return { dot(row(0), v), dot(row(1), v) };
     }
 
     inline fp rc(IndexPair x) const
@@ -267,6 +290,11 @@ public:
 /*****************************************************************************/
 // constexpr function implementation
 /*****************************************************************************/
+
+constexpr fp dot(const Vec2f& lhs, const Vec2f& rhs)
+{
+    return lhs.x * rhs.x + lhs.y * rhs.y;
+}
 
 constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs)
 {
