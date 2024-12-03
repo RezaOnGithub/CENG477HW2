@@ -242,7 +242,7 @@ CheckOptions:
   # - { key: readability-identifier-naming.TemplateParameterPrefix,                 value:  }
   # - { key: readability-identifier-naming.TemplateParameterIgnoredRegexp,          value:  }
   # - { key: readability-identifier-naming.TemplateParameterSuffix,                 value:  }
-  - { key: readability-identifier-naming.TypeAliasCase, value: lower_case } # Type Aliases #
+  - { key: readability-identifier-naming.TypeAliasCase, value: CamelCase } # Type Aliases #
   # - { key: readability-identifier-naming.TypeAliasPrefix,                         value:  }
   # - { key: readability-identifier-naming.TypeAliasIgnoredRegexp,                  value:  }
   # - { key: readability-identifier-naming.TypeAliasSuffix,                         value:  }            ################
