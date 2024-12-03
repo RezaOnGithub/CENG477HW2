@@ -110,8 +110,13 @@ RasterTriangle rasterize(const World& w, const ViewConfig& v,
     fragc.insert(fragc.end(), l1.begin(), l1.end());
     fragc.insert(fragc.end(), l2.begin(), l2.end());
 
-    RasterTriangle r {f, {}};
-    for (auto c: fragc) {
-        r.out.push_back( {fragc, {}});
+    RasterTriangle r { f, {} };
+    for (auto c : fragc)
+    {
+        // TODO throwing away Z for now!
+        r.out.push_back({
+            c, {{ 255, 0, 0 }, -1}
+        });
     }
+    return r;
 }
