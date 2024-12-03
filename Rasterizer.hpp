@@ -1,5 +1,6 @@
 #pragma once
 #include "Base.hpp"
+#include "World.hpp"
 
 #include <cstddef>
 using namespace m;
@@ -66,20 +67,7 @@ using namespace m;
 // Either use painter's algorithm or the Z value carried from
 // Vertex->NDC->Dot.z->Frag.z to display the correct fragment
 
-// Store per-vertex data (hoping to use it for texture mapping and lighting
-// later). Three "types" of per-vertex data:
-//      - uniform: Absolutely NO interpolation. For a given triangle, all
-//      three vertices OUGHT to have the same uniform values
-//      - smooth: perspective-correct interpolation
-//      - noperspective: lerp without taking perspective into account
-//      - closest: no interpolation, give the closest one (OpenGL doesn't
-//      have it)
-//      - flat: no interpolation, give value for "provoking" vertex (Unused)
-struct VertexAttribute
-{
-    Pixel noperspective_ceng477_color;
-    Vec3f noperspective_normal;
-};
+
 
 struct Vertex
 {
