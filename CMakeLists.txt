@@ -21,6 +21,7 @@ include(GoogleTest)
 add_executable(mixed_test 
         test_everything.cpp
         Base.cpp
+        tinyxml2.cpp
         CENG477.cpp
         World.cpp
 )
