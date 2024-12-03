@@ -3,6 +3,8 @@
 #include "World.hpp"
 
 #include <cstddef>
+#include <utility>
+#include <vector>
 using namespace m;
 
 // Exhaustive Specification for Rasterizer
@@ -35,6 +37,7 @@ using namespace m;
 // ---------------------------------
 //
 // Dots are Vec3f on the screen plane. Not fragments yet.
+// Dots use VP-Coordinates, NOT pixel coordinates!
 // To generate Fragments, we need to play "connect-the-dots" to create outlines
 // of each of the original shapes. Outlines may be clipped using a Polygon
 // clipping algorithm.
@@ -67,39 +70,30 @@ using namespace m;
 // Either use painter's algorithm or the Z value carried from
 // Vertex->NDC->Dot.z->Frag.z to display the correct fragment
 
+struct FragmentAttribute;
+struct Fragment;
+struct RasterTriangle;
 
-
-struct Vertex
-{
-    Vec3f coord;
-    VertexAttribute payload;
-
-    constexpr double operator[](size_t i) const
-    {
-        return coord[i];
-    }
-};
+using ScreenCoordinate = std::pair<long,long>;
 
 struct FragmentAttribute
 {
-    fp depth;
-    VertexAttribute interp;
+    m::Pixel noperspective_ceng477_color;
+    m::fp depth;
 };
 
-// Fragments hold a payload that has data from "birthing" vertices, alongwith
-// depth data. Vertex data that is computed and passed on to Fragment comes in
-// multiple flavors. See VertexAttribute
-// TODO making payload const ... somehow ... to avoid ever editing it
 struct Fragment
 {
-    Vec3f clipspace;
-    FragmentAttribute payload;
-
-    double operator[](const size_t i) const;
+    Vec4f ndc;
+    Vec3f vp;
+    Vec2f scr;
+    FragmentAttribute attrib;
 };
 
-class Rasterizer
+struct RasterTriangle
 {
-public:
-    Rasterizer() = delete;
+    Face mother;
+    std::vector<Fragment> out;
 };
+
+RasterTriangle rasterize(const World& w, const ViewConfig& v, size_t face_index);

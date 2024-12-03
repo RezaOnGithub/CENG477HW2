@@ -35,13 +35,14 @@ add_executable(rasterizer
         main_rasterizer.cpp
         tinyxml2.cpp
         CENG477.cpp
-        Rasterizer.cpp
         Base.cpp
         World.cpp
+        Rasterizer.cpp
+        Renderer.cpp
 )
 
-add_executable(visual_test
-        main_visualtest.cpp
-        Base.cpp
-)
-target_link_libraries(visual_test raylib)
+# add_executable(visual_test
+#         main_visualtest.cpp
+#         Base.cpp
+# )
+# target_link_libraries(visual_test raylib)

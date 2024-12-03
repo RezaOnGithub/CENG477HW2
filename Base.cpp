@@ -217,6 +217,18 @@ Matrix4 Matrix4::operator*(const Matrix4& rhs) const
     });
 }
 
+Vec4f Matrix4::operator*(const Vec4f& rhs) const
+{
+    // because operator[] does not return a reference, can't write it in
+    // loop form
+    return {
+        dot(row(0), rhs),
+        dot(row(1), rhs),
+        dot(row(2), rhs),
+        dot(row(3), rhs),
+    };
+}
+
 fp Matrix4::minor(IndexPair x) const
 {
     std::vector<IndexPair> p {};

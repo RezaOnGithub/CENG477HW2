@@ -129,26 +129,6 @@ struct Ray
     Vec3f v;
 };
 
-struct LineSegment
-{
-    Vec3f start;
-    Vec3f end;
-
-    // Right-Handed Normal
-    fp line_equation(fp x);
-    Vec2f normal();
-};
-
-struct Box
-{
-    Vec2f a, b;
-
-    fp minx() const;
-    fp maxx() const;
-    fp miny() const;
-    fp maxy() const;
-};
-
 class Matrix2
 {
 private:
@@ -277,6 +257,7 @@ public:
     Vec4f row(size_t i) const;
     Matrix4 transpose() const;
     Matrix4 operator*(const Matrix4& rhs) const;
+    Vec4f operator*(const Vec4f& rhs) const;
     fp minor(IndexPair x) const;
     fp det() const;
     Matrix4 scale(fp fp) const;
@@ -305,6 +286,16 @@ constexpr Vec3f pointwise(const Vec3f& lhs, const Vec3f& rhs)
 constexpr Vec4f pointwise(const Vec4f& lhs, const Vec4f& rhs)
 {
     return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w };
+}
+
+// take winding order and such into account
+// https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
+constexpr Vec3f surface_normal(const Vec3f v0, const Vec3f v1, const Vec3f v2)
+{
+    const Vec3f u = { v1.x - v0.x, v1.y - v0.y, v1.z - v0.z };
+    const Vec3f v = { v2.x - v0.x, v2.y - v0.y, v2.z - v0.z };
+    return { u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z,
+             u.x * v.y - u.y * v.x };
 }
 
 /*****************************************************************************/
