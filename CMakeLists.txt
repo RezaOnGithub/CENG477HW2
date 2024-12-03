@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(raytracer C CXX)
+project(rasterizer CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -11,7 +11,8 @@ add_subdirectory(thirdparty/raylib)
 # include_directories(thirdparty/include) # raygui, stb_image_write
 add_subdirectory(thirdparty/googletest)
 # add_subdirectory(thirdparty/assimp)     # a model loading framework
-add_subdirectory(thirdparty/glm) # to check my math!
+#add_subdirectory(thirdparty/glm) # to check my math!
+find_package(glm CONFIG REQUIRED)
 
 add_compile_definitions(CENG477_RESOURCE="${CMAKE_CURRENT_SOURCE_DIR}/resource")
 
@@ -20,9 +21,13 @@ include(GoogleTest)
 add_executable(mixed_test 
         test_everything.cpp
         Base.cpp
+        CENG477.cpp
+        World.cpp
 )
-target_link_libraries(mixed_test GTest::gtest_main)
-target_link_libraries(mixed_test glm::glm)
+target_link_libraries(mixed_test PRIVATE
+        GTest::gtest_main
+        glm::glm
+)
 gtest_discover_tests(mixed_test)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
@@ -32,6 +37,7 @@ add_executable(rasterizer
         CENG477.cpp
         Rasterizer.cpp
         Base.cpp
+        World.cpp
 )
 
 add_executable(visual_test
