@@ -34,7 +34,7 @@ struct Vertex
     Vec3f coord;
     VertexAttributeInterp interp;
     const FaceAttributeUniform uniform;
-    constexpr fp operator[](size_t i)
+    inline fp operator[](size_t i) const
     {
         return coord[i];
     }
