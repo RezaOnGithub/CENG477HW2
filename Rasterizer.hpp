@@ -74,7 +74,8 @@ struct FragmentAttribute;
 struct Fragment;
 struct RasterTriangle;
 
-using ScreenCoordinate = std::pair<long,long>;
+// NOTE: Pixel Coordinates don't follow 2D graphics convention!
+using PixelCoordinate = std::pair<long, long>;
 
 struct FragmentAttribute
 {
@@ -84,9 +85,8 @@ struct FragmentAttribute
 
 struct Fragment
 {
-    Vec4f ndc;
-    Vec3f vp;
-    Vec2f scr;
+    PixelCoordinate pc;
+    // Vec4f vpc;
     FragmentAttribute attrib;
 };
 
@@ -96,4 +96,5 @@ struct RasterTriangle
     std::vector<Fragment> out;
 };
 
-RasterTriangle rasterize(const World& w, const ViewConfig& v, size_t face_index);
+RasterTriangle rasterize(const World& w, const ViewConfig& v,
+                         size_t face_index);

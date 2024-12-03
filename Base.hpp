@@ -118,9 +118,9 @@ struct Vec4f
     fp x, y, z, w;
 
     double operator[](size_t i) const;
-    Vec4f mapto(fp a, fp b) const;
-    Vec4f scale(fp a) const;
-    fp row(size_t i) const;
+    [[nodiscard]] Vec4f mapto(fp a, fp b) const;
+    [[nodiscard]] Vec4f scale(fp a) const;
+    [[nodiscard]] fp row(size_t i) const;
 };
 
 struct Ray
