@@ -91,8 +91,8 @@ A scene in some format.
 ### Processing
 
 - 3 matrix multiplications. Simple.
-- The resultant transformed `Face` needs to be culled (WIP)
-- `t_viewport` multiplications for each vertex of this weird shape we got.
+- The resultant transformed `Face` needs to be clipped (WIP)
+- `t_viewport` multiplications for each vertex of this weird shape we got. Simple!
 
 ### Output
 
@@ -127,6 +127,17 @@ where $Y$ becomes larger as we go *down*.
 
 
 
-## Stage 5: Write to Image
+## Step 5: Write to Image
 
 *Self-explanatory*
+
+---
+
+# TODO
+
+- Re-organize Renderer to reflect these steps.
+- Tweak Rasterizer interface
+- New data-structure to hold the "weird shape"
+- Midpoint Algorithm
+- Filling in shapes
+- Clearly mark where all the "dehomogenization" happens.
