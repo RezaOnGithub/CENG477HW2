@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdio>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,9 @@ constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs);
 constexpr fp dot(const Vec4f& lhs, const Vec4f& rhs);
 constexpr Vec3f pointwise(const Vec3f& lhs, const Vec3f& rhs);
 constexpr Vec4f pointwise(const Vec4f& lhs, const Vec4f& rhs);
+constexpr Vec3f cross(const Vec3f& a, const Vec3f& b);
+constexpr Vec3f surface_normal(const Vec3f& v0, const Vec3f& v1,
+                               const Vec3f& v2);
 
 /*****************************************************************************/
 // debug forward decleration
@@ -127,6 +131,16 @@ struct Vec4f
     [[nodiscard]] Vec4f mapto(fp a, fp b) const;
     [[nodiscard]] Vec4f scale(fp a) const;
     [[nodiscard]] fp row(size_t i) const;
+
+    // NOTE: minimize use of this function! don't lose precision!
+    [[nodiscard]] constexpr Vec3f dehomogenize() const
+    {
+        if (w == 0)
+        {
+            return { x, y, z };
+        }
+        return { x / w, y / w, z / w };
+    }
 };
 
 struct Ray
@@ -316,9 +330,19 @@ constexpr Vec4f pointwise(const Vec4f& lhs, const Vec4f& rhs)
     return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z, lhs.w * rhs.w };
 }
 
+constexpr Vec3f cross(const Vec3f& a, const Vec3f& b)
+{
+    return {
+        a.y * b.z - a.z * b.y,
+        -1 * a.x * b.z + a.z * b.x,
+        a.x * b.y - a.y * b.x,
+    };
+}
+
 // take winding order and such into account
 // https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
-constexpr Vec3f surface_normal(const Vec3f v0, const Vec3f v1, const Vec3f v2)
+constexpr Vec3f surface_normal(const Vec3f& v0, const Vec3f& v1,
+                               const Vec3f& v2)
 {
     const Vec3f u = { v1.x - v0.x, v1.y - v0.y, v1.z - v0.z };
     const Vec3f v = { v2.x - v0.x, v2.y - v0.y, v2.z - v0.z };
