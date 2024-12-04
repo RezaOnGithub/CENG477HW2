@@ -91,11 +91,11 @@ RasterTriangle rasterize(const World& w, const ViewConfig& v,
     });
 
     const Vec4f vp0 =
-        t_viewport * v.t_projection * v.t_camera * f.v0.coord.homopoint();
+        t_viewport * v.t_projection * v.t_camera * f.v0.wc.homopoint();
     const Vec4f vp1 =
-        t_viewport * v.t_projection * v.t_camera * f.v1.coord.homopoint();
+        t_viewport * v.t_projection * v.t_camera * f.v1.wc.homopoint();
     const Vec4f vp2 =
-        t_viewport * v.t_projection * v.t_camera * f.v2.coord.homopoint();
+        t_viewport * v.t_projection * v.t_camera * f.v2.wc.homopoint();
 
     const Vec4f vp0h = vp0.scale(vp1.w * vp2.w);
     const Vec4f vp1h = vp0.scale(vp0.w * vp2.w);
