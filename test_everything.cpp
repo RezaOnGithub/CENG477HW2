@@ -1,5 +1,7 @@
 #include "Base.hpp"
 #include "CENG477.hpp"
+#include "Rasterizer.hpp"
+#include "World.hpp"
 
 #include <cstddef>
 #include <glm/glm.hpp>
@@ -8,6 +10,8 @@
 #include <iostream>
 #include <numbers>
 
+namespace util
+{
 m::Matrix4 glm2base(glm::mat4 t)
 {
     using namespace m;
@@ -19,6 +23,7 @@ m::Matrix4 glm2base(glm::mat4 t)
     }
     return Matrix4::from_columns(c);
 }
+}   // namespace util
 
 // I don't think this test is needed
 TEST(Basic, HelloTesting)
@@ -180,7 +185,7 @@ TEST(Basic, Matrix4Invert2)
         { 1, 0, 0,  0},
         { 0, 0, 0,  1}
     });
-    const auto expected = glm2base(glm::inverse(glm::transpose(glm::mat4({
+    const auto expected = util::glm2base(glm::inverse(glm::transpose(glm::mat4({
         {0,  0, -1, 0},
         { 0, 1, 0,  0},
         { 1, 0, 0,  0},
@@ -221,7 +226,8 @@ TEST(Basic, Homorotate1)
         for (int j = 0; j < 4; j++)
         {
             // printf("i = %d\tj =%d\n", i, j);
-            EXPECT_TRUE(eq_within(r.column(j).row(i), expected.column(j).row(i),
+            EXPECT_TRUE(eq_within(r.column(j).row(i),
+            expected.column(j).row(i),
                                   ceng::EPSILON));
         }
     }
@@ -249,7 +255,8 @@ TEST(Basic, Homorotate2)
         for (int j = 0; j < 4; j++)
         {
             // printf("i = %d\tj =%d\n", i, j);
-            EXPECT_TRUE(eq_within(r.column(j).row(i), expected.column(j).row(i),
+            EXPECT_TRUE(eq_within(r.column(j).row(i),
+            expected.column(j).row(i),
                                   ceng::EPSILON));
         }
     }
@@ -277,8 +284,42 @@ TEST(Basic, Homorotate3)
         for (int j = 0; j < 4; j++)
         {
             // printf("i = %d\tj =%d\n", i, j);
-            EXPECT_TRUE(eq_within(r.column(j).row(i), expected.column(j).row(i),
+            EXPECT_TRUE(eq_within(r.column(j).row(i),
+            expected.column(j).row(i),
                                   ceng::EPSILON));
         }
     }
+}
+
+// TODO turn this into an actual test, but I think it works so I'm leaving it out
+TEST(Basic, PointRendering1)
+{
+    using namespace m;
+
+    const bool perspective = false;
+    const ViewFrustum vf { -1, 1, 1, -1, 1, 5 };
+    const ViewConfig v = ViewConfig("test", 3, 3, { 0, 0, 1 }, { 0, 0, -1 },
+                                    { 1, 0, 0 }, vf, {}, perspective, false);
+
+    dprint("t_vp: ", v.t_viewport);
+    dprint("v.t_projection", v.t_projection);
+    dprint("v.t_camera", v.t_camera);
+
+    const Matrix4 t_render = v.t_viewport * v.t_projection * v.t_camera;
+    dprint("final point rendering matrix", t_render);
+
+    dprint("W(0,0,0) becomes", (t_render * Vec4f(0, 0, 0, 1)).dehomogenize());
+    dprint("W(1,0,0) becomes", (t_render * Vec4f(1, 0, 0, 1)).dehomogenize());
+    dprint("W(1,1,0) becomes", (t_render * Vec4f(1, 1, 0, 1)).dehomogenize());
+
+    // dprint("t_vp * [1,0,0]", t_viewport * (Vec3f(1, 0, 0).homopoint()));
+    // dprint("t_vp * [0,1,0]", t_viewport * (Vec3f(0, 1, 0).homopoint()));
+    // dprint("t_vp * [0,0,1]", t_viewport * (Vec3f(0, 0, 1).homopoint()));
+
+    // dprint("t_vp * [-1,0,0]", t_viewport * (Vec3f(-1, 0, 0).homopoint()));
+    // dprint("t_vp * [0,-1,0]", t_viewport * (Vec3f(0, -1, 0).homopoint()));
+    // dprint("t_vp * [0,0,-1]", t_viewport * (Vec3f(0, 0, -1).homopoint()));
+
+    // dprint("t_vp * [1,1,0]", t_viewport * (Vec3f(1, 1, 0).homopoint()));
+    // dprint("t_vp * [-1,-1,0]", t_viewport * (Vec3f(-1, -1, 0).homopoint()));
 }

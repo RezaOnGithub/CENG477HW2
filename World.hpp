@@ -18,6 +18,36 @@ struct FaceAttributeUniform;
 struct World;
 struct ViewConfig;
 
+struct ViewFrustum
+{
+    m::fp left, right, top, bottom, near, far;
+};
+
+m::Matrix4 viewport_transformation(long pixel_grid_rows,
+                                   long pixel_grid_columns);
+m::Matrix4 orthographic_projection(ViewFrustum f);
+m::Matrix4 perspective_projection(ViewFrustum vf);
+m::Matrix4 camera_transformation(m::Vec3f cam_o, m::Vec3f gaze, m::Vec3f up);
+
+class ViewConfig
+{
+public:
+    ViewConfig() = delete;
+    ViewConfig(const char* filename, long rows, long columns,
+               const m::Vec3f& camera_origin, const m::Vec3f& camera_gaze,
+               const m::Vec3f& camera_up, const ViewFrustum& frustum,
+               const m::Pixel& background_color, bool perspective_correct,
+               bool cull_backface);
+    std::string filename;
+    m::Pixel bg_color;
+    m::Matrix4 t_viewport;
+    m::Matrix4 t_projection;
+    m::Matrix4 t_camera;
+    long pixel_grid_rows;
+    long pixel_grid_columns;
+    bool cull_backface;
+};
+
 // complemented by World(const ceng::Scene &s)
 std::vector<ViewConfig> extract_views(const ceng::Scene& s);
 
@@ -68,17 +98,6 @@ struct Face
             throw std::runtime_error("Invalid Index!");
         }
     }
-};
-
-struct ViewConfig
-{
-    std::string filename;
-    m::Pixel bg_color;
-    m::Matrix4 t_camera;
-    m::Matrix4 t_projection;
-    long pixel_grid_rows;
-    long pixel_grid_columns;
-    bool cull_backface;
 };
 
 struct World

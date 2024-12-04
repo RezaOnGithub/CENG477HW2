@@ -2,11 +2,40 @@
 
 #include "Base.hpp"
 #include "CENG477.hpp"
+#include "Rasterizer.hpp"
 
 #include <cstdlib>
+#include <string>
 
-static m::Matrix4 camera_transformation(m::Vec3f cam_o, m::Vec3f gaze,
-                                        m::Vec3f up)
+ViewConfig::ViewConfig(const char* name, long rows, long columns,
+                       const m::Vec3f& camera_origin,
+                       const m::Vec3f& camera_gaze, const m::Vec3f& camera_up,
+                       const ViewFrustum& f, const m::Pixel& background_color,
+                       bool perspective_correct, bool cull_backface) :
+    filename(name),
+    bg_color(background_color),
+    t_viewport(viewport_transformation(rows, columns)),
+    t_projection(perspective_correct ? perspective_projection(f) :
+                                       orthographic_projection(f)),
+    t_camera(camera_transformation(camera_origin, camera_gaze, camera_up)),
+    pixel_grid_rows(rows),
+    pixel_grid_columns(columns),
+    cull_backface(cull_backface)
+{
+}
+
+m::Matrix4 viewport_transformation(long pixel_grid_rows,
+                                   long pixel_grid_columns)
+{
+    return Matrix4::from_rows({
+        {pixel_grid_rows / 2.0, 0,                        0, (pixel_grid_rows - 1) / 2.0   },
+        { 0,                    pixel_grid_columns / 2.0, 0, (pixel_grid_columns - 1) / 2.0},
+        { 0,                    0,                        1, 0                             },
+        { 0,                    0,                        0, 1                             }
+    });
+}
+
+m::Matrix4 camera_transformation(m::Vec3f cam_o, m::Vec3f gaze, m::Vec3f up)
 {
     using namespace m;
     const Vec3f w = gaze.scale(-1);
@@ -17,19 +46,14 @@ static m::Matrix4 camera_transformation(m::Vec3f cam_o, m::Vec3f gaze,
         .invert();
 }
 
-struct ViewFrustum
-{
-    m::fp left, right, top, bottom, near, far;
-};
-
-static m::Matrix4 orthographic_projection(ViewFrustum f)
+m::Matrix4 orthographic_projection(ViewFrustum f)
 {
     // do NOT trust the user in passing values correctly-signed
     using namespace m;
     using std::abs;
-    const fp width = abs(abs(f.left) - abs(f.right));
-    const fp height = abs(abs(f.top) - abs(f.bottom));
-    const fp distance = abs(abs(f.near) - abs(f.far));
+    const fp width = abs(f.left - f.right);
+    const fp height = abs(f.top - f.bottom);
+    const fp distance = abs(f.near - f.far);
     return Matrix4::from_rows({
         {2.0 / width, 0,            0,              abs(f.right + f.left) / width },
         { 0,          2.0 / height, 0,              abs(f.top + f.bottom) / height},
@@ -38,14 +62,14 @@ static m::Matrix4 orthographic_projection(ViewFrustum f)
     });
 }
 
-static m::Matrix4 perspective_projection(ViewFrustum fr)
+m::Matrix4 perspective_projection(ViewFrustum vf)
 {
     // do NOT trust the user in passing values correctly-signed
     using namespace m;
     using std::abs;
-    const fp n = -abs(fr.near);
-    const fp f = -abs(fr.far);
-    const Matrix4 orthographic = orthographic_projection(fr);
+    const fp n = -abs(vf.near);
+    const fp f = -abs(vf.far);
+    const Matrix4 orthographic = orthographic_projection(vf);
     const Matrix4 perspective = Matrix4::from_rows({
         {n,  0, 0,     0     },
         { 0, n, 0,     0     },
@@ -58,22 +82,17 @@ static m::Matrix4 perspective_projection(ViewFrustum fr)
 ViewConfig sample_view(m::fp r)
 {
     using namespace m;
-    const Vec3f cam_v { -1, -1, -1 };
-    const Vec3f cam_o { 1, 1, 1 };
+    Vec3f cam_v { -1, -1, -1 };
+    Vec3f cam_o { 1, 1, 1 };
     const Matrix4 rot = homorotate(r, {
                                           {0,  0, 0},
                                           { 0, 1, 0}
     });
-    const Matrix4 tcam = camera_transformation(
-        (rot * (cam_o.homopoint())).dehomogenize(),
-        (rot * (cam_v.homovector())).dehomogenize(), { 0, 1, 0 });
-    return {
-        "sample_view", { 0, 0, 0 },
-        tcam,          perspective_projection({ 5, -5, 5, -5, 0.2, 10 }
-         ),
-        800,           600,
-        false,
-    };
+    cam_o = (rot * cam_o.homopoint()).dehomogenize();
+    cam_v = (rot * cam_v.homopoint()).dehomogenize();
+    const ViewFrustum vf { 5, -5, 5, -5, 0.2, 10 };
+    return ViewConfig("sample view", 800, 600, cam_o, cam_v, { 0, 1, 0 }, vf,
+                      { 0, 0, 0 }, true, false);
 }
 
 World sample_world()
