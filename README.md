@@ -31,6 +31,8 @@ Transform all point in Canonical Viewing Volume to an image plane of size `image
 that is actually *slightly shifted* towards $ (-0.5,-0.5) $ so that 
 **integer coordinates are the center of a pixel sample**.
 
+This coordinate system is the first quadrant of the canonical 2D coordinate system (i.e. $Y$-up).
+
 Original $Z$ values are not touched! It is still in range $[-1,1]$, unlike $X$ and $Y$.
 
 ## Notes
