@@ -77,7 +77,7 @@ struct Vec2f
         case 1 :
             return y;
         default :
-            throw std::string("Invalid Index!");
+            throw std::runtime_error("Invalid Index!");
         }
     }
 
@@ -109,7 +109,7 @@ struct Vec3f
         case 2 :
             return z;
         default :
-            throw std::string("Invalid String!");
+            throw std::runtime_error("Invalid String!");
         }
     };
 
@@ -172,13 +172,13 @@ public:
         case 1 :
             return c1;
         default :
-            throw std::string("Invalid Index!");
+            throw std::runtime_error("Invalid Index!");
         }
     }
 
     inline Vec2f row(size_t i) const
     {
-        return {column(0).row(i), column(1).row(i)};
+        return { column(0).row(i), column(1).row(i) };
     }
 
     inline Vec2f operator*(const Vec2f& v) const

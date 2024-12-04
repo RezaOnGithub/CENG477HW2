@@ -26,7 +26,7 @@ double Vec3f::operator[](const size_t i) const
     default :
         // Locked behind C++23 (would've also been constexpr-compatible)
         // std::unreachable();
-        throw std::string("Invalid index");
+        throw std::runtime_error("Invalid index");
     }
 }
 
@@ -69,7 +69,7 @@ double Vec4f::operator[](const size_t i) const
     default :
         // Locked behind C++23 (would've also been constexpr-compatible)
         // std::unreachable();
-        throw std::string("Invalid index");
+        throw std::runtime_error("Invalid index");
     }
 }
 
@@ -97,7 +97,7 @@ fp Vec4f::row(const size_t i) const
     case 3 :
         return w;
     default :
-        throw std::string("Invalid index");
+        throw std::runtime_error("Invalid index");
     }
 }
 
@@ -121,7 +121,7 @@ Vec3f Matrix3::column(size_t i) const
     case 2 :
         return c2;
     default :
-        throw std::string("Invalid index");
+        throw std::runtime_error("Invalid index");
     }
 }
 
@@ -186,7 +186,7 @@ Vec4f Matrix4::column(const size_t i) const
     default :
         // Locked behind C++23
         // std::unreachable();
-        throw std::string("Invalid Index!");
+        throw std::runtime_error("Invalid Index!");
     }
 }
 
