@@ -39,7 +39,11 @@ Original $Z$ values are not touched! It is still in range $[-1,1]$, unlike $X$ a
 - **IS NOT** used for clipping. The code for clipping should reside in Renderer!
 - Viewport Coordinates are floating-point!
 - Sooner or later coordinates need to be "dehomogenized"
-- Points here are fed to rasterized to obtain integer-aligned *fragments*
+- Points here are fed to rasterized to obtain integer-aligned *fragments* that have a different coordinate vectors
+
+## Pixel Coordinates
+
+Are different from Viewport Coordinates! Are non-negative integers! Have $Y$-down! Only used for outputting!
 
 # Weird Coordinate Naming
 
@@ -110,8 +114,8 @@ A scene in some format.
 
 ### Output
 
-- A `Fragment`, that has integer Pixel Coordinates in **conventional 2D directions**
-where $Y$ becomes larger as we go *down*.
+- A `Fragment`, that has integer Pixel Coordinates in **conventional 2D graphics directions**
+where $Y$ becomes larger as we go *down*, unlike Viewport Coordinates!
 
 ## Step 4: Fragment Processing (Depth Test)
 
