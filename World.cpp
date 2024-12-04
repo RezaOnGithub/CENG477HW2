@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <string>
 
+// TODO the initializer list does not feel good. Matrix4 does not have a public
+// default constructor yet it works for some reason.
 ViewConfig::ViewConfig(const char* name, long rows, long columns,
                        const m::Vec3f& camera_origin,
                        const m::Vec3f& camera_gaze, const m::Vec3f& camera_up,

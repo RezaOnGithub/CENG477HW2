@@ -1,10 +1,43 @@
 # Attribute Type Qualifiers
 
-- uniform: constant accross the face
-- smooth: perspective-correct interpolation
-- noperspective: linear interpolation (Barycentric coordinates!)
+- `uniform`: constant accross the face
+- `smooth`: perspective-correct interpolation
+- `noperspective`: linear interpolation (Barycentric coordinates)
 
 **Unimplemented**: flat ("provoking" vertex), closest (would-be-nice)
+
+# Concise Description of Coordinate Systems
+
+## World Coordinates
+
+"Bake" all modeling transformations. Simple.
+
+## Camera Coordinates
+
+Change of coordinates so that -w is camera gaze. Simple
+
+## Normalized Device Coordinates
+
+Map the space inside camera frustum to $ [-1,1] ^ 3 $
+
+### Notes
+- Z-values here will get mapped into Z-buffer element range $ [0,1] $.
+- **IS** used for clipping.
+- **IS NOT** the input to rasterizer, technically.
+
+## Viewport Coordinates
+
+Transform all point in Canonical Viewing Volume to an image plane of size `image_width * image_height`
+that is actually *slightly shifted* towards $ (-0.5,-0.5) $ so that 
+**integer coordinates are the center of a pixel sample**.
+
+Original $Z$ values are not touched! It is still in range $[-1,1]$, unlike $X$ and $Y$.
+
+## Notes
+- **IS NOT** used for clipping. The code for clipping should reside in Renderer!
+- Viewport Coordinates are floating-point!
+- Sooner or later coordinates need to be "dehomogenized"
+- Points here are fed to rasterized to obtain integer-aligned *fragments*
 
 # Weird Coordinate Naming
 
@@ -12,62 +45,88 @@
 |---------------|------------------------------------|---------------------------------------------------------|-----------|
 | wc            | Vec3f                              | World Coordinates                                       | Arbitrary |
 | cc            | Vec4f                              | Camera Coordinates                                      | Arbitrary |
-| ndc           | Vec4f                              | Canonical Viewing Volume/Normalized Device Coordinates  | \[-1,1\]\*\*3 |
-| vpc           | Vec4f                              | Viewport/Image Plane Coordinates                        | ???       |
+| ndc           | Vec4f                              | Canonical Viewing Volume/Normalized Device Coordinates  | $[-1,1]^3$ |
+| vpc           | Vec4f                              | Viewport/Image Plane Coordinates                        | See Above      |
 | pc            | PixelCoordinates (natural numbers) | Final Pixel Buffer Coordinates (first row, then column) | ViewConfig-dependent          |
 
 # Exhaustive "Product Story"
 
-## Stage 0: World (input)
+## Step 0: World (input)
 
-Every object is composed of faces. Every face has its own attributes
-Every face contains vertices.
-Every vertex has its own attributes.
-Everything is fed to Rasterizer in its canonical (worldspace) form
+### Input
 
-## Stage 1: Camera
+A scene in some format.
 
-Calculate camera coordinates of each vertex and store it alongside canonical
-coordinates. Shouldn't be too hard.
+### Processing
 
-Take the time to find Surface Normals. Then, perform BFC.
+"Bake" the scene.
 
-## Stage 2: Device
+### Output
+- Every object is composed of `Face`, though objects themselves are not exposed to outside, so a `std::vector<Face>` may as well be the input world object. Every `Face` contains `Vertex`. Both have an associated *attribute* object.
 
-Calculate bounds of the viewing volume and cull objects that are completely
-outside it. Then, calculate NDC for each vertex and store it alongside the
-others.
 
-## Stage 3: Dots and Outlines on Viewport
+     + *Attributes*: Vertices and Faces may have attributes that need to be passed down to its resultant Fragments. Vertices have `ceng477_color`. Faces may have an associated material.
 
-Dots are Vec3f on the screen plane. Not fragments yet.
-Dots use VP-Coordinates, NOT pixel coordinates!
-To generate Fragments, we need to play "connect-the-dots" to create outlines
-of each of the original shapes. Outlines may be clipped using a Polygon
-clipping algorithm.
+## Step 1: Camera (`t_camera`, Back-face culling)
 
-Every Dot knows the vertex it came from. Every outline knows the face it came
-from.
+### Input
 
-## Stage 4: Generate Fragments on Pixel Grid
+- A single `Face`
 
-Now that you have "connected the dots", you need to fill in the shapes.
-First, draw using midpoint algorithm. Then, if it is required, paint inside
-the outlines using triangles rasterization algorithms PLUS AN EXTRA CHECK to
-see whether you are in-bounds of the canvas. This will also guarentee it is
-within the outline.
+### Processing
 
-Fair bit of interpolation needed. At minimum:
-     - noperspective_ceng477_color
-     - Z values
+- Calculate camera coordinates of vertices. Simple
+- Find Surface Normals. Take normal and gaze. Perform BFC
 
-Every Fragment knows the Outline, Face it came from.
+### Output
 
-At this stage, every output fragment can be directly written to the output if
-we are going from front to back. If not, generate everything and then perform
-min_Z_search for each fragment and write /that/ result.
+- Either a `Face` or nothing.
 
-## Stage 5: Fragment Processing
+## Step 2: Device + Viewport Transform (`t_projection`, Clipping, `t_viewport`)
 
-Perform depth-testing. Write to the final image.
-This stage could be more complicated if you consider translucency and what not.
+### Input
+
+- A single `Face`
+
+### Processing
+
+- 3 matrix multiplications. Simple.
+- The resultant transformed `Face` needs to be culled (WIP)
+- `t_viewport` multiplications for each vertex of this weird shape we got.
+
+### Output
+
+- A weird shape, with vertices in Viewport Coordinates (WIP)
+
+## Step 3: Rasterizer (Line Drawing, Solid Drawing, Attribute Interpolation)
+
+### Input
+
+- A weird shape, with vertices in Viewport Coordinates (WIP)
+
+### Processing
+
+### Output
+
+- A `Fragment`, that has integer Pixel Coordinates in **conventional 2D directions**
+where $Y$ becomes larger as we go *down*.
+
+## Step 4: Fragment Processing (Depth Test)
+
+### Input
+
+- *All* of the resultant many a `Fragment`.
+
+### Processing
+
+- Initialize Z-buffer and perform Depth Test by iterating through all Fragments
+
+### Output
+
+- *Some* of the resultant many a `Fragment`.
+
+
+
+## Stage 5: Write to Image
+
+*Self-explanatory*
