@@ -4,11 +4,13 @@
 #include "World.hpp"
 
 #include <cstddef>
+#include <cstdio>
 #include <glm/glm.hpp>
 #include <glm/matrix.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <numbers>
+#include <optional>
 
 namespace util
 {
@@ -226,8 +228,7 @@ TEST(Basic, Homorotate1)
         for (int j = 0; j < 4; j++)
         {
             // printf("i = %d\tj =%d\n", i, j);
-            EXPECT_TRUE(eq_within(r.column(j).row(i),
-            expected.column(j).row(i),
+            EXPECT_TRUE(eq_within(r.column(j).row(i), expected.column(j).row(i),
                                   ceng::EPSILON));
         }
     }
@@ -255,8 +256,7 @@ TEST(Basic, Homorotate2)
         for (int j = 0; j < 4; j++)
         {
             // printf("i = %d\tj =%d\n", i, j);
-            EXPECT_TRUE(eq_within(r.column(j).row(i),
-            expected.column(j).row(i),
+            EXPECT_TRUE(eq_within(r.column(j).row(i), expected.column(j).row(i),
                                   ceng::EPSILON));
         }
     }
@@ -284,14 +284,14 @@ TEST(Basic, Homorotate3)
         for (int j = 0; j < 4; j++)
         {
             // printf("i = %d\tj =%d\n", i, j);
-            EXPECT_TRUE(eq_within(r.column(j).row(i),
-            expected.column(j).row(i),
+            EXPECT_TRUE(eq_within(r.column(j).row(i), expected.column(j).row(i),
                                   ceng::EPSILON));
         }
     }
 }
 
-// TODO turn this into an actual test, but I think it works so I'm leaving it out
+// TODO turn this into an actual test, but I think it works so I'm leaving it
+// out
 TEST(Basic, PointRendering1)
 {
     using namespace m;
@@ -322,4 +322,241 @@ TEST(Basic, PointRendering1)
 
     // dprint("t_vp * [1,1,0]", t_viewport * (Vec3f(1, 1, 0).homopoint()));
     // dprint("t_vp * [-1,-1,0]", t_viewport * (Vec3f(-1, -1, 0).homopoint()));
+}
+
+TEST(Basic, IntersectAAInner1)
+{
+    Vec3f pn { 0, 0, 1 };   // sample point on plane: {0,0,-1}
+    Vec4f start = Vec3f(0, 0, 0).homopoint(1);
+    Vec4f end = Vec3f(0.5, 0.5, 0.5).homopoint(1);
+    HomoLine input { start, end };
+    HomoLine expected = input;
+    std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_FLOAT_EQ(start.x, result->start.x);
+    EXPECT_FLOAT_EQ(start.y, result->start.y);
+    EXPECT_FLOAT_EQ(start.z, result->start.z);
+    EXPECT_FLOAT_EQ(end.x, result->end.x);
+    EXPECT_FLOAT_EQ(end.y, result->end.y);
+    EXPECT_FLOAT_EQ(end.z, result->end.z);
+}
+
+TEST(Basic, IntersectAAInner2)
+{
+    Vec3f pn { 0, 0, 1 };   // sample point on plane: {0,0,-1}
+    Vec4f start = Vec3f(0, 0, 0).homopoint(-1);
+    Vec4f end = Vec3f(0.5, 0.5, 0.5).homopoint(-1);
+    HomoLine input { start, end };
+    HomoLine expected = input;
+    std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_FLOAT_EQ(start.x, result->start.x);
+    EXPECT_FLOAT_EQ(start.y, result->start.y);
+    EXPECT_FLOAT_EQ(start.z, result->start.z);
+    EXPECT_FLOAT_EQ(end.x, result->end.x);
+    EXPECT_FLOAT_EQ(end.y, result->end.y);
+    EXPECT_FLOAT_EQ(end.z, result->end.z);
+}
+
+TEST(Basic, IntersectAAInner3)
+{
+    Vec3f pn { 0, 0, 1 };   // sample point on plane: {0,0,-1}
+    Vec4f start = Vec3f(0, 0, 0).homopoint(1);
+    Vec4f end = Vec3f(0.5, 0.5, 0.5).homopoint(-1);
+    HomoLine input { start, end };
+    HomoLine expected = input;
+    std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+    printf("The current normal is %f %f %f\n", pn.x, pn.y, pn.z);
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_FLOAT_EQ(start.x, result->start.x);
+    EXPECT_FLOAT_EQ(start.y, result->start.y);
+    EXPECT_FLOAT_EQ(start.z, result->start.z);
+    EXPECT_FLOAT_EQ(end.x, result->end.x);
+    EXPECT_FLOAT_EQ(end.y, result->end.y);
+    EXPECT_FLOAT_EQ(end.z, result->end.z);
+}
+
+TEST(Basic, IntersectAAInner4)
+{
+    std::vector<Vec3f> pns {
+        {0,   0,  1 },
+        { 0,  0,  -1},
+        { 0,  1,  0 },
+        { 0,  -1, 0 },
+        { 1,  0,  0 },
+        { -1, 0,  0 }
+    };
+    Vec3f start3 { 0, 0, 0 };
+    Vec3f end3 { 0.5, 0.5, 0.5 };
+    for (auto pn : pns)
+    {
+        for (int i = -100; i < 101; i++)
+        {
+            if (i == 0)
+            {
+                continue;
+            }
+            // printf("The current normal is %f %f %f and dnom is %d\n", pn.x,
+            //        pn.y, pn.z, i);
+            Vec4f start = start3.homopoint(1.0 / i);
+            Vec4f end = end3.homopoint(1.0 / i);
+            HomoLine input { start, end };
+            HomoLine expected = input;
+            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+            EXPECT_TRUE(result.has_value());
+            EXPECT_FLOAT_EQ(start.x, result->start.x);
+            EXPECT_FLOAT_EQ(start.y, result->start.y);
+            EXPECT_FLOAT_EQ(start.z, result->start.z);
+            EXPECT_FLOAT_EQ(end.x, result->end.x);
+            EXPECT_FLOAT_EQ(end.y, result->end.y);
+            EXPECT_FLOAT_EQ(end.z, result->end.z);
+        }
+    }
+}
+
+TEST(Basic, IntersectAAInner5)
+{
+    std::vector<Vec3f> pns {
+        {0,   0,  1 },
+        { 0,  0,  -1},
+        { 0,  1,  0 },
+        { 0,  -1, 0 },
+        { 1,  0,  0 },
+        { -1, 0,  0 }
+    };
+    // Trivially Fails every plane but 3
+    Vec3f start3 { 10, 10, 10 };
+    Vec3f end3 { 11, 11, 11 };
+    int successes = 0;
+
+    for (auto pn : pns)
+    {
+        for (int i = -100; i < 101; i++)
+        {
+            if (i == 0)
+            {
+                continue;
+            }
+            // printf("The current normal is %f %f %f and dnom is %d\n", pn.x,
+            //        pn.y, pn.z, i);
+            Vec4f start = start3.homopoint(1.0 / i);
+            Vec4f end = end3.homopoint(1.0 / i);
+            HomoLine input { start, end };
+            HomoLine expected = input;
+            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+            if (result.has_value())
+            {
+                successes++;
+            }
+            // EXPECT_TRUE(result.has_value());
+            // EXPECT_FLOAT_EQ(start.x, result->start.x);
+            // EXPECT_FLOAT_EQ(start.y, result->start.y);
+            // EXPECT_FLOAT_EQ(start.z, result->start.z);
+            // EXPECT_FLOAT_EQ(end.x, result->end.x);
+            // EXPECT_FLOAT_EQ(end.y, result->end.y);
+            // EXPECT_FLOAT_EQ(end.z, result->end.z);
+        }
+    }
+    EXPECT_EQ(successes, 600);
+}
+
+TEST(Basic, IntersectAAInner6)
+{
+    std::vector<Vec3f> pns {
+  // {0,   0,  1 },
+  // { 0,  0,  -1},
+  // { 0,  1,  0 },
+        {0, -1, 0},
+ // { 1,  0,  0 },
+  // { -1, 0,  0 }
+    };
+    Vec3f start3 { 0, 0, 0 };
+    Vec3f end3 { 0, 10, 0 };
+
+    for (auto pn : pns)
+    {
+        for (int i = -100; i < 101; i++)
+        {
+            if (i == 0)
+            {
+                continue;
+            }
+            printf("The current normal is %f %f %f and dnom is %d\n", pn.x,
+                   pn.y, pn.z, i);
+            Vec4f start = start3.homopoint(1.0 / i);
+            Vec4f end = end3.homopoint(1.0 / i);
+            HomoLine input { start, end };
+            HomoLine expected {
+                start, {0, 1, 0, 1}
+            };
+            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+            dprint("the actual returned ending", result->end);
+
+            EXPECT_TRUE(result.has_value());
+            EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
+                            result->start.dehomogenize().x);
+            EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
+                            result->start.dehomogenize().y);
+            EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
+                            result->start.dehomogenize().z);
+            EXPECT_FLOAT_EQ(expected.end.dehomogenize().x,
+                            result->end.dehomogenize().x);
+            EXPECT_FLOAT_EQ(expected.end.dehomogenize().y,
+                            result->end.dehomogenize().y);
+            EXPECT_FLOAT_EQ(expected.end.dehomogenize().z,
+                            result->end.dehomogenize().z);
+        }
+    }
+}
+
+TEST(Basic, IntersectAAInner7)
+{
+    std::vector<Vec3f> pns {
+  // {0,   0,  1 },
+  // { 0,  0,  -1},
+  // { 0,  1,  0 },
+        {0, -1, 0},
+ // { 1,  0,  0 },
+  // { -1, 0,  0 }
+    };
+    Vec3f start3 { 0, 0, 0 };
+    Vec3f end3 { 0, 10, 0 };
+
+    for (auto pn : pns)
+    {
+        for (int i = -100; i < 101; i++)
+        {
+            if (i == 0)
+            {
+                continue;
+            }
+            printf("The current normal is %f %f %f and dnom is %d\n", pn.x,
+                   pn.y, pn.z, i);
+            Vec4f start = start3.homopoint(1.0 / i);
+            Vec4f end = end3.homopoint(1.0 / i);
+            HomoLine input { start, end };
+            HomoLine expected {
+                start, {0, 1, 0, 1}
+            };
+            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+            dprint("the actual returned ending", result->end);
+
+            EXPECT_TRUE(result.has_value());
+            EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
+                            result->start.dehomogenize().x);
+            EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
+                            result->start.dehomogenize().y);
+            EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
+                            result->start.dehomogenize().z);
+            EXPECT_FLOAT_EQ(expected.end.dehomogenize().x,
+                            result->end.dehomogenize().x);
+            EXPECT_FLOAT_EQ(expected.end.dehomogenize().y,
+                            result->end.dehomogenize().y);
+            EXPECT_FLOAT_EQ(expected.end.dehomogenize().z,
+                            result->end.dehomogenize().z);
+        }
+    }
 }
