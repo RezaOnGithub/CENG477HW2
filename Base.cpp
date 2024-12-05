@@ -1,8 +1,11 @@
 #include "Base.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,7 +45,7 @@ Vec3f Vec3f::scale(const fp a) const
 
 Vec4f Vec3f::homopoint(const fp w) const
 {
-    return { x, y, z, w };
+    return { w * x, w * y, w * z, w };
 }
 
 Vec4f Vec3f::homovector() const
@@ -323,6 +326,104 @@ Vec3f barycentric(const Vec2f& a, const Vec2f& b, const Vec2f& c,
 
     const Vec2f bc = solve * p;
     return { 1 - bc.x - bc.y, bc.x, bc.y };
+}
+
+// TODO I have tried my best not to dehomogenize and hope for correctness
+// TODO FIXME after making sure it's correct, eliminate dehomogenization!
+std::optional<HomoLine> intersect_aa_inner(const Vec3f& normal,
+                                           const HomoLine& l, fp epsilon)
+{
+    const Vec4f start = l.cohomogenize().start;
+    const Vec4f end = l.cohomogenize().end;
+    const fp w = start.w;
+    const Vec3f direction =
+        Vec4f(end.x - start.x, end.y - start.y, end.z - start.z, w)
+            .dehomogenize();
+    Vec3f point_on_plane = normal.scale(-1);
+
+    auto line_eq = [&normal, &point_on_plane](Vec3f p)
+    {
+        return dot(normal, { p.x - point_on_plane.x, p.y - point_on_plane.y,
+                             p.z - point_on_plane.z });
+    };
+
+    const int limiting_coordinate_index = normal[0] ? 0 : (normal[1] ? 1 : 2);
+    std::vector<int> free_coordinate_indices;
+    for (int i = 0; i < 3; i++)
+    {
+        if (i == limiting_coordinate_index)
+        {
+            continue;
+        }
+        free_coordinate_indices.push_back(i);
+    }
+
+    // const fp cc_bound = -normal[constant_coordinate_index];
+    // // reminder that these are cohomo
+    // const fp start_vc[2] { start[variable_coordinate_indices[0]],
+    //                        start[variable_coordinate_indices[1]] };
+    // const fp start_cc = start[constant_coordinate_index];
+
+    // const fp end_vc[2] { end[variable_coordinate_indices[0]],
+    //                      end[variable_coordinate_indices[1]] };
+    const fp end_cc = end[limiting_coordinate_index];
+
+    const fp start_subs = line_eq(start.dehomogenize());
+    const fp end_subs = line_eq(end.dehomogenize());
+
+    // Epsilon Policy: Be Liberal in What You Accept
+
+    // Trivial Success: both points are on the "positive" side of the plane
+    if (start_subs > -ceng_epsilon and end_subs > -ceng_epsilon)
+    {
+        // puts("Trivial Success!");
+        return { l };
+    }
+
+    // Trivial Failure: both points on the "negative" side
+    if (start_subs < -ceng_epsilon and end_subs < -ceng_epsilon)
+    {
+        puts("Trivial Failure!");
+        return {};
+    }
+
+    // It is guarenteed that if line is intersecting the plane it is not
+    // parallel to it.
+
+    // Line is intersecting
+    Vec3f point_on_line = start.dehomogenize();
+    Vec3f point_on_plane_minus_point_on_line {
+        point_on_plane.x - point_on_line.x, point_on_plane.y - point_on_line.y,
+        point_on_plane.z - point_on_line.z
+    };
+    fp point_on_plane_minus_point_on_line_dot_normal =
+        dot(point_on_plane_minus_point_on_line, normal);
+    fp direction_dot_normal = dot(direction, normal);
+    fp d = point_on_plane_minus_point_on_line_dot_normal / direction_dot_normal;
+    Vec3f plane_intersection { point_on_line.x + d * direction.x,
+                               point_on_line.y + d * direction.y,
+                               point_on_line.z + d * direction.z };
+    if (within(plane_intersection[free_coordinate_indices[0]], -1, 1) and
+        within(plane_intersection[free_coordinate_indices[1]], -1, 1))
+    {
+        // puts("Found an intersection on AA Rectangle!");
+        // dprint("intersection", plane_intersection);
+        if (d > 0)
+        {
+            // starting point is inside, ending is outside
+            return {
+                {l.start, plane_intersection.homopoint()}
+            };
+        }
+        return {
+            {plane_intersection.homopoint(), l.end}
+        };
+    }
+
+    // As far as I'm concerned, it is within my bounds
+    // Someone else will clip this, but it is weird nontheless
+    throw std::runtime_error("I CAN'T CLIP THIS!");
+    return { l };
 }
 
 /*****************************************************************************/

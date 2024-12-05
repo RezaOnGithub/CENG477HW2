@@ -1,14 +1,18 @@
 #pragma once
+#include <cassert>
 #include <cstddef>
 #include <cstdio>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace m
 {
 
 using fp = double;
+constexpr double ceng_epsilon = 0.000000001;
 
 /*****************************************************************************/
 // struct forward declerations
@@ -27,8 +31,8 @@ struct Matrix3;
 struct Matrix4;
 
 struct Ray;
-struct Box;
-struct LineSegment;
+struct HomoLine;
+struct HomoPolygon;
 
 struct IndexPair
 {
@@ -42,6 +46,9 @@ struct IndexPair
 Vec3f normalize(const Vec3f& a);
 Matrix4 homotranslate(const Vec3f& additive);
 Matrix4 homorotate(double ccw_angle, const Ray& axis);
+
+std::optional<HomoLine> intersect_aa_inner(const Vec3f& n, const HomoLine& l,
+                                           fp epsilon = ceng_epsilon);
 
 constexpr fp dot(const Vec2f& lhs, const Vec2f& rhs);
 constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs);
@@ -149,7 +156,51 @@ struct Ray
     Vec3f v;
 };
 
+struct HomoLine
+{
+    Vec4f start, end;
+
+    [[nodiscard]] inline HomoLine cohomogenize() const
+    {
+        assert(start.w != 0 and end.w != 0);
+        int sign = 1;
+        if (start.w < 0)
+        {
+            sign *= -1;
+        }
+        if (end.w < 0)
+        {
+            sign *= -1;
+        }
+        return { start.scale(sign * end.w), end.scale(sign * start.w) };
+    }
+};
+
+struct HomoPolygon
+{
+    std::vector<Vec4f> v;
+
+    // [[nodiscard]] inline HomoPolygon cohomogenize() const
+    // {
+    //     std::vector<Vec4f> h;
+    //     fp wh = 1;
+    //     for (auto vert : v)
+    //     {
+    //         wh *= vert.w;
+    //     }
+    //     h.reserve(v.size());
+    //     // Don't forget to remove assertions!
+    //     assert(wh != 0);
+    //     for (auto vert : v)
+    //     {
+    //         h.push_back(vert.scale(wh));
+    //     }
+    //     return { h };
+    // }
+};
+
 class Matrix2
+
 {
 private:
     inline Matrix2(Vec2f a, Vec2f b) :
@@ -354,10 +405,16 @@ constexpr Vec3f surface_normal(const Vec3f& v0, const Vec3f& v1,
 // misc
 /*****************************************************************************/
 
-inline bool eq_within(const float& i, const float& j, const float& ep)
+inline bool eq_within(fp i, fp j, fp ep)
 {
     // assert(ep >= 0);
     return i > j ? i - j <= ep : j - i <= ep;
+}
+
+inline bool within(fp x, fp a, fp b)
+{
+    assert(a < b);
+    return x - a > 0 and b - x > 0;
 }
 
 /*****************************************************************************/
