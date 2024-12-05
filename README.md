@@ -106,23 +106,35 @@ A scene in some format.
 
 ### Input
 
-- A single `Face`
+- A single `S1Face`
 
 ### Processing
 
 - 3 matrix multiplications. Simple.
-- The resultant transformed `Face` needs to be clipped (WIP)
-- `t_viewport` multiplications for each vertex of this weird shape we got. Simple!
 
 ### Output
 
-- A weird shape, with vertices in Viewport Coordinates (WIP)
+- A single `S3Face`
 
-## Step 3: Rasterizer (Line Drawing, Solid Drawing, Attribute Interpolation)
+## Step 4: Clipping
 
 ### Input
 
-- A weird shape, with vertices in Viewport Coordinates (WIP)
+- A single `S3Face`
+
+### Processing
+
+- Clip against the NDC planes by performing Sutherland-Hodgman algorithm
+
+### Output
+
+- A single `S4Polygon`
+
+## Step 5: Rasterizer (Line Drawing, Solid Drawing, Attribute Interpolation)
+
+### Input
+
+- A single `S4Polygon`
 
 ### Processing
 
@@ -131,7 +143,7 @@ A scene in some format.
 - A `Fragment`, that has integer Pixel Coordinates in **conventional 2D graphics directions**
 where $Y$ becomes larger as we go *down*, unlike Viewport Coordinates!
 
-## Step 4: Fragment Processing (Depth Test)
+## Step 6: Fragment Processing (Depth Test)
 
 ### Input
 
@@ -147,7 +159,7 @@ where $Y$ becomes larger as we go *down*, unlike Viewport Coordinates!
 
 
 
-## Step 5: Write to Image
+## Step 7: Write to Image
 
 *Self-explanatory*
 
@@ -155,9 +167,6 @@ where $Y$ becomes larger as we go *down*, unlike Viewport Coordinates!
 
 # TODO
 
-- Re-organize Renderer to reflect these steps.
 - Tweak Rasterizer interface
-- New data-structure to hold the "weird shape"
 - Midpoint Algorithm
 - Filling in shapes
-- Clearly mark where all the "dehomogenization" happens.
