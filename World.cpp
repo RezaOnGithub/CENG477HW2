@@ -16,6 +16,7 @@ ViewConfig::ViewConfig(const char* name, long rows, long columns,
                        bool perspective_correct, bool cull_backface) :
     filename(name),
     bg_color(background_color),
+    gaze(camera_gaze),
     t_viewport(viewport_transformation(rows, columns)),
     t_projection(perspective_correct ? perspective_projection(f) :
                                        orthographic_projection(f)),

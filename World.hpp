@@ -40,6 +40,7 @@ public:
                bool cull_backface);
     std::string filename;
     m::Pixel bg_color;
+    m::Vec3f gaze;
     m::Matrix4 t_viewport;
     m::Matrix4 t_projection;
     m::Matrix4 t_camera;
