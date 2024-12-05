@@ -331,15 +331,15 @@ TEST(Basic, IntersectAAInner1)
     Vec4f end = Vec3f(0.5, 0.5, 0.5).homopoint(1);
     HomoLine input { start, end };
     HomoLine expected = input;
-    std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+    auto result = clip_aa_inner(pn, input);
 
-    EXPECT_TRUE(result.has_value());
-    EXPECT_FLOAT_EQ(start.x, result->start.x);
-    EXPECT_FLOAT_EQ(start.y, result->start.y);
-    EXPECT_FLOAT_EQ(start.z, result->start.z);
-    EXPECT_FLOAT_EQ(end.x, result->end.x);
-    EXPECT_FLOAT_EQ(end.y, result->end.y);
-    EXPECT_FLOAT_EQ(end.z, result->end.z);
+    EXPECT_TRUE(result.t != Clip::ClipType::NonExistant);
+    EXPECT_FLOAT_EQ(start.x, result.l.start.x);
+    EXPECT_FLOAT_EQ(start.y, result.l.start.y);
+    EXPECT_FLOAT_EQ(start.z, result.l.start.z);
+    EXPECT_FLOAT_EQ(end.x, result.l.end.x);
+    EXPECT_FLOAT_EQ(end.y, result.l.end.y);
+    EXPECT_FLOAT_EQ(end.z, result.l.end.z);
 }
 
 TEST(Basic, IntersectAAInner2)
@@ -349,15 +349,15 @@ TEST(Basic, IntersectAAInner2)
     Vec4f end = Vec3f(0.5, 0.5, 0.5).homopoint(-1);
     HomoLine input { start, end };
     HomoLine expected = input;
-    std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+    auto result = clip_aa_inner(pn, input);
 
-    EXPECT_TRUE(result.has_value());
-    EXPECT_FLOAT_EQ(start.x, result->start.x);
-    EXPECT_FLOAT_EQ(start.y, result->start.y);
-    EXPECT_FLOAT_EQ(start.z, result->start.z);
-    EXPECT_FLOAT_EQ(end.x, result->end.x);
-    EXPECT_FLOAT_EQ(end.y, result->end.y);
-    EXPECT_FLOAT_EQ(end.z, result->end.z);
+    EXPECT_TRUE(result.t != Clip::ClipType::NonExistant);
+    EXPECT_FLOAT_EQ(start.x, result.l.start.x);
+    EXPECT_FLOAT_EQ(start.y, result.l.start.y);
+    EXPECT_FLOAT_EQ(start.z, result.l.start.z);
+    EXPECT_FLOAT_EQ(end.x, result.l.end.x);
+    EXPECT_FLOAT_EQ(end.y, result.l.end.y);
+    EXPECT_FLOAT_EQ(end.z, result.l.end.z);
 }
 
 TEST(Basic, IntersectAAInner3)
@@ -367,16 +367,16 @@ TEST(Basic, IntersectAAInner3)
     Vec4f end = Vec3f(0.5, 0.5, 0.5).homopoint(-1);
     HomoLine input { start, end };
     HomoLine expected = input;
-    std::optional<HomoLine> result = intersect_aa_inner(pn, input);
+    auto result = clip_aa_inner(pn, input);
     printf("The current normal is %f %f %f\n", pn.x, pn.y, pn.z);
 
-    EXPECT_TRUE(result.has_value());
-    EXPECT_FLOAT_EQ(start.x, result->start.x);
-    EXPECT_FLOAT_EQ(start.y, result->start.y);
-    EXPECT_FLOAT_EQ(start.z, result->start.z);
-    EXPECT_FLOAT_EQ(end.x, result->end.x);
-    EXPECT_FLOAT_EQ(end.y, result->end.y);
-    EXPECT_FLOAT_EQ(end.z, result->end.z);
+    EXPECT_TRUE(result.t != Clip::ClipType::NonExistant);
+    EXPECT_FLOAT_EQ(start.x, result.l.start.x);
+    EXPECT_FLOAT_EQ(start.y, result.l.start.y);
+    EXPECT_FLOAT_EQ(start.z, result.l.start.z);
+    EXPECT_FLOAT_EQ(end.x, result.l.end.x);
+    EXPECT_FLOAT_EQ(end.y, result.l.end.y);
+    EXPECT_FLOAT_EQ(end.z, result.l.end.z);
 }
 
 TEST(Basic, IntersectAAInner4)
@@ -405,14 +405,14 @@ TEST(Basic, IntersectAAInner4)
             Vec4f end = end3.homopoint(1.0 / i);
             HomoLine input { start, end };
             HomoLine expected = input;
-            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
-            EXPECT_TRUE(result.has_value());
-            EXPECT_FLOAT_EQ(start.x, result->start.x);
-            EXPECT_FLOAT_EQ(start.y, result->start.y);
-            EXPECT_FLOAT_EQ(start.z, result->start.z);
-            EXPECT_FLOAT_EQ(end.x, result->end.x);
-            EXPECT_FLOAT_EQ(end.y, result->end.y);
-            EXPECT_FLOAT_EQ(end.z, result->end.z);
+            auto result = clip_aa_inner(pn, input);
+            EXPECT_TRUE(result.t != Clip::ClipType::NonExistant);
+            EXPECT_FLOAT_EQ(start.x, result.l.start.x);
+            EXPECT_FLOAT_EQ(start.y, result.l.start.y);
+            EXPECT_FLOAT_EQ(start.z, result.l.start.z);
+            EXPECT_FLOAT_EQ(end.x, result.l.end.x);
+            EXPECT_FLOAT_EQ(end.y, result.l.end.y);
+            EXPECT_FLOAT_EQ(end.z, result.l.end.z);
         }
     }
 }
@@ -446,18 +446,18 @@ TEST(Basic, IntersectAAInner5)
             Vec4f end = end3.homopoint(1.0 / i);
             HomoLine input { start, end };
             HomoLine expected = input;
-            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
-            if (result.has_value())
+            auto result = clip_aa_inner(pn, input);
+            if (result.t != Clip::ClipType::NonExistant)
             {
                 successes++;
             }
-            // EXPECT_TRUE(result.has_value());
-            // EXPECT_FLOAT_EQ(start.x, result->start.x);
-            // EXPECT_FLOAT_EQ(start.y, result->start.y);
-            // EXPECT_FLOAT_EQ(start.z, result->start.z);
-            // EXPECT_FLOAT_EQ(end.x, result->end.x);
-            // EXPECT_FLOAT_EQ(end.y, result->end.y);
-            // EXPECT_FLOAT_EQ(end.z, result->end.z);
+            // EXPECT_TRUE(result.t != Clip::ClipType::NonExistant);
+            //  EXPECT_FLOAT_EQ(start.x, result.l.start.x);
+            //  EXPECT_FLOAT_EQ(start.y, result.l.start.y);
+            //  EXPECT_FLOAT_EQ(start.z, result.l.start.z);
+            //  EXPECT_FLOAT_EQ(end.x, result.l.end.x);
+            //  EXPECT_FLOAT_EQ(end.y, result.l.end.y);
+            //  EXPECT_FLOAT_EQ(end.z, result.l.end.z);
         }
     }
     EXPECT_EQ(successes, 600);
@@ -492,22 +492,22 @@ TEST(Basic, IntersectAAInner6)
             HomoLine expected {
                 start, {0, 1, 0, 1}
             };
-            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
-            dprint("the actual returned ending", result->end);
+            auto result = clip_aa_inner(pn, input);
+            dprint("the actual returned ending", result.l.end);
 
-            EXPECT_TRUE(result.has_value());
+            EXPECT_TRUE(result.t != Clip::ClipType::NonExistant);
             EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
-                            result->start.dehomogenize().x);
+                            result.l.start.dehomogenize().x);
             EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
-                            result->start.dehomogenize().y);
+                            result.l.start.dehomogenize().y);
             EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
-                            result->start.dehomogenize().z);
+                            result.l.start.dehomogenize().z);
             EXPECT_FLOAT_EQ(expected.end.dehomogenize().x,
-                            result->end.dehomogenize().x);
+                            result.l.end.dehomogenize().x);
             EXPECT_FLOAT_EQ(expected.end.dehomogenize().y,
-                            result->end.dehomogenize().y);
+                            result.l.end.dehomogenize().y);
             EXPECT_FLOAT_EQ(expected.end.dehomogenize().z,
-                            result->end.dehomogenize().z);
+                            result.l.end.dehomogenize().z);
         }
     }
 }
@@ -541,22 +541,22 @@ TEST(Basic, IntersectAAInner7)
             HomoLine expected {
                 start, {0, 1, 0, 1}
             };
-            std::optional<HomoLine> result = intersect_aa_inner(pn, input);
-            dprint("the actual returned ending", result->end);
+            auto result = clip_aa_inner(pn, input);
+            dprint("the actual returned ending", result.l.end);
 
-            EXPECT_TRUE(result.has_value());
+            EXPECT_TRUE(result.t != Clip::ClipType::NonExistant);
             EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
-                            result->start.dehomogenize().x);
+                            result.l.start.dehomogenize().x);
             EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
-                            result->start.dehomogenize().y);
+                            result.l.start.dehomogenize().y);
             EXPECT_FLOAT_EQ(expected.start.dehomogenize().x,
-                            result->start.dehomogenize().z);
+                            result.l.start.dehomogenize().z);
             EXPECT_FLOAT_EQ(expected.end.dehomogenize().x,
-                            result->end.dehomogenize().x);
+                            result.l.end.dehomogenize().x);
             EXPECT_FLOAT_EQ(expected.end.dehomogenize().y,
-                            result->end.dehomogenize().y);
+                            result.l.end.dehomogenize().y);
             EXPECT_FLOAT_EQ(expected.end.dehomogenize().z,
-                            result->end.dehomogenize().z);
+                            result.l.end.dehomogenize().z);
         }
     }
 }

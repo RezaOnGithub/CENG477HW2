@@ -73,7 +73,7 @@ A scene in some format.
 
      + *Attributes*: Vertices and Faces may have attributes that need to be passed down to its resultant Fragments. Vertices have `ceng477_color`. Faces may have an associated material.
 
-## Step 1: Camera (`t_camera`, Back-face culling)
+## Step 1: Camera (`t_camera`)
 
 ### Input
 
@@ -82,13 +82,27 @@ A scene in some format.
 ### Processing
 
 - Calculate camera coordinates of vertices. Simple
-- Find Surface Normals. Take normal and gaze. Perform BFC
 
 ### Output
 
-- Either a `Face` or nothing.
+- A `S1Face`
 
-## Step 2: Device + Viewport Transform (`t_projection`, Clipping, `t_viewport`)
+## Step 2: Back-face culling
+
+### Input
+
+- A single `S1Face`
+
+### Processing
+
+- Calculate homogenous normal of `Face` in Camera space.
+- Calculate dot product of this normal and camera gaze. Try culling.
+
+### Output
+
+- A single `S1Face` or nothing
+
+## Step 3: Device (`t_projection`, Clipping)
 
 ### Input
 

@@ -330,8 +330,7 @@ Vec3f barycentric(const Vec2f& a, const Vec2f& b, const Vec2f& c,
 
 // TODO I have tried my best not to dehomogenize and hope for correctness
 // TODO FIXME after making sure it's correct, eliminate dehomogenization!
-std::optional<HomoLine> intersect_aa_inner(const Vec3f& normal,
-                                           const HomoLine& l, fp epsilon)
+Clip clip_aa_inner(const Vec3f& normal, const HomoLine& l, fp epsilon)
 {
     const Vec4f start = l.cohomogenize().start;
     const Vec4f end = l.cohomogenize().end;
@@ -377,14 +376,14 @@ std::optional<HomoLine> intersect_aa_inner(const Vec3f& normal,
     if (start_subs > -ceng_epsilon and end_subs > -ceng_epsilon)
     {
         // puts("Trivial Success!");
-        return { l };
+        return { l, Clip::ClipType::NoCut };
     }
 
     // Trivial Failure: both points on the "negative" side
     if (start_subs < -ceng_epsilon and end_subs < -ceng_epsilon)
     {
         puts("Trivial Failure!");
-        return {};
+        return { {}, Clip::ClipType::NonExistant };
     }
 
     // It is guarenteed that if line is intersecting the plane it is not
@@ -412,18 +411,19 @@ std::optional<HomoLine> intersect_aa_inner(const Vec3f& normal,
         {
             // starting point is inside, ending is outside
             return {
-                {l.start, plane_intersection.homopoint()}
+                {l.start, plane_intersection.homopoint()},
+                Clip::ClipType::CutTail
             };
         }
         return {
-            {plane_intersection.homopoint(), l.end}
+            {plane_intersection.homopoint(), l.end},
+            Clip::ClipType::CutTail
         };
     }
 
-    // As far as I'm concerned, it is within my bounds
-    // Someone else will clip this, but it is weird nontheless
-    throw std::runtime_error("I CAN'T CLIP THIS!");
-    return { l };
+    // TODO delete this once things seem OK
+    throw std::runtime_error(
+        "Bug in clipping: line was supposed to intersect!");
 }
 
 /*****************************************************************************/
