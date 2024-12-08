@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 // TODO the initializer list does not feel good. Matrix4 does not have a public
 // default constructor yet it works for some reason.
@@ -79,6 +80,34 @@ m::Matrix4 perspective_projection(ViewFrustum vf)
         { 0, 0, 1,     0      }
     });
     return orthographic * perspective;
+}
+
+m::Pixel color_to_pixel(const ceng::Color& c)
+{
+    // TODO
+    return { 255, 255, 255 };
+}
+
+std::vector<ViewConfig> extract_views(const ceng::Scene& s)
+{
+    std::vector<ViewConfig> result;
+    result.reserve(s.cameras.size());
+    for (auto* c : s.cameras)
+    {
+        result.emplace_back(ViewConfig {
+            c->outputFilename.c_str(),
+            /*rows*/ c->verRes,
+            /*cols*/ c->horRes,
+            { c->position.x, c->position.y, c->position.z },
+            { c->gaze.x, c->gaze.y, c->gaze.z },
+            { c->v.x, c->v.y, c->v.z },
+            { c->left, c->right, c->top, c->bottom, c->near, c->far },
+            color_to_pixel(s.backgroundColor),
+            (c->projectionType != 0),
+            s.cullingEnabled
+        });
+    }
+    return result;
 }
 
 ViewConfig sample_view(m::fp r)
