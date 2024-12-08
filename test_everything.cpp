@@ -4,12 +4,12 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <glm/ext/matrix_float4x4.hpp>
 #include <glm/glm.hpp>
 #include <glm/matrix.hpp>
 #include <gtest/gtest.h>
-#include <iostream>
 #include <numbers>
-#include <optional>
+#include <vector>
 
 using namespace m;
 
@@ -20,6 +20,7 @@ m::Matrix4 glm2base(glm::mat4 t)
     using namespace m;
     std::vector<Vec4f> c {};
 
+    c.reserve(4);
     for (int x = 0; x < 4; x++)
     {
         c.push_back({ t[x][0], t[x][1], t[x][2], t[x][3] });
@@ -38,8 +39,8 @@ TEST(Basic, LineEquation)
 {
     using namespace m;
     Ray r {
-        {0,  0, 0},
-        { 1, 1, 0}
+        { 0, 0, 0 },
+        { 1, 1, 0 }
     };
     // EXPECT_LE(line(r, {1,0,0}), 0);
 }
@@ -55,9 +56,9 @@ TEST(Basic, Matrix3Det2)
 {
     using namespace m;
     Matrix3 mat = Matrix3::from_rows({
-        {-1, 0, 0},
-        { 0, 1, 0},
-        { 0, 0, 1}
+        { -1, 0, 0 },
+        { 0,  1, 0 },
+        { 0,  0, 1 }
     });
     EXPECT_EQ(-1, mat.det());
 }
@@ -66,9 +67,9 @@ TEST(Basic, Matrix3Det3)
 {
     using namespace m;
     Matrix3 mat = Matrix3::from_rows({
-        {1,  2, 3},
-        { 4, 5, 6},
-        { 0, 0, 0}
+        { 1, 2, 3 },
+        { 4, 5, 6 },
+        { 0, 0, 0 }
     });
     EXPECT_EQ(0, mat.det());
 }
@@ -77,16 +78,16 @@ TEST(Basic, Matrix3Det4)
 {
     using namespace m;
     auto mat = Matrix3::from_rows({
-        {1,  2, 3},
-        { 4, 5, 6},
-        { 7, 8, 9}
+        { 1, 2, 3 },
+        { 4, 5, 6 },
+        { 7, 8, 9 }
     });
     dprint("matrix in question", mat);
     fp res = mat.det();
     fp expected = glm::determinant(glm::mat4({
-        {1,  2, 3},
-        { 4, 5, 6},
-        { 7, 8, 9}
+        { 1, 2, 3 },
+        { 4, 5, 6 },
+        { 7, 8, 9 }
     }));
     EXPECT_EQ(res, expected);
 }
@@ -95,16 +96,16 @@ TEST(Basic, Matrix4Mul1)
 {
     using namespace m;
     Matrix4 mat1 = Matrix4::from_rows({
-        {1,  0, 0, 0},
-        { 0, 1, 0, 0},
-        { 0, 0, 1, 0},
-        { 0, 0, 0, 1},
+        { 1, 0, 0, 0 },
+        { 0, 1, 0, 0 },
+        { 0, 0, 1, 0 },
+        { 0, 0, 0, 1 },
     });
     Matrix4 mat2 = Matrix4::from_rows({
-        {1,   2,  3,  4 },
-        { 5,  6,  7,  8 },
-        { 9,  10, 11, 12},
-        { 13, 14, 15, 16},
+        { 1,  2,  3,  4  },
+        { 5,  6,  7,  8  },
+        { 9,  10, 11, 12 },
+        { 13, 14, 15, 16 },
     });
     Matrix4 res = mat1 * mat2;
     for (int i = 0; i < 4; i++)
@@ -120,10 +121,10 @@ TEST(Basic, Matrix4Det1)
 {
     using namespace m;
     Matrix4 mat = Matrix4::from_rows({
-        {1,  0, 0, 0},
-        { 0, 1, 0, 0},
-        { 0, 0, 1, 0},
-        { 0, 0, 0, 1},
+        { 1, 0, 0, 0 },
+        { 0, 1, 0, 0 },
+        { 0, 0, 1, 0 },
+        { 0, 0, 0, 1 },
     });
     EXPECT_EQ(1, mat.det());
 }
@@ -132,10 +133,10 @@ TEST(Basic, Matrix4Det2)
 {
     using namespace m;
     Matrix4 mat = Matrix4::from_rows({
-        {-1, 0, 0, 0},
-        { 0, 1, 0, 0},
-        { 0, 0, 1, 0},
-        { 0, 0, 0, 1},
+        { -1, 0, 0, 0 },
+        { 0,  1, 0, 0 },
+        { 0,  0, 1, 0 },
+        { 0,  0, 0, 1 },
     });
     EXPECT_EQ(-1, mat.det());
 }
@@ -144,10 +145,10 @@ TEST(Basic, Matrix4Det3)
 {
     using namespace m;
     Matrix4 mat = Matrix4::from_rows({
-        {1,   2,  3,  4 },
-        { 5,  6,  7,  8 },
-        { 9,  10, 11, 12},
-        { 13, 14, 15, 16},
+        { 1,  2,  3,  4  },
+        { 5,  6,  7,  8  },
+        { 9,  10, 11, 12 },
+        { 13, 14, 15, 16 },
     });
     EXPECT_EQ(0, mat.det());
 }
@@ -156,10 +157,10 @@ TEST(Basic, Matrix4Det4)
 {
     using namespace m;
     Matrix4 mat = Matrix4::from_rows({
-        {0,  2,  3,  4 },
-        { 0, 6,  7,  8 },
-        { 0, 10, 11, 12},
-        { 0, 14, 15, 16},
+        { 0, 2,  3,  4  },
+        { 0, 6,  7,  8  },
+        { 0, 10, 11, 12 },
+        { 0, 14, 15, 16 },
     });
     EXPECT_EQ(0, mat.det());
 }
@@ -183,16 +184,16 @@ TEST(Basic, Matrix4Invert2)
 {
     using namespace m;
     Matrix4 t = Matrix4::from_rows({
-        {0,  0, -1, 0},
-        { 0, 1, 0,  0},
-        { 1, 0, 0,  0},
-        { 0, 0, 0,  1}
+        { 0, 0, -1, 0 },
+        { 0, 1, 0,  0 },
+        { 1, 0, 0,  0 },
+        { 0, 0, 0,  1 }
     });
     const auto expected = util::glm2base(glm::inverse(glm::transpose(glm::mat4({
-        {0,  0, -1, 0},
-        { 0, 1, 0,  0},
-        { 1, 0, 0,  0},
-        { 0, 0, 0,  1}
+        { 0, 0, -1, 0 },
+        { 0, 1, 0,  0 },
+        { 1, 0, 0,  0 },
+        { 0, 0, 0,  1 }
     }))));
     dprint("expected matrix", expected);
     Matrix4 res = t.invert();
@@ -212,15 +213,15 @@ TEST(Basic, Homorotate1)
     using namespace m;
     const fp ccw_angle = std::numbers::pi / 2;
     const Ray z {
-        {0,  0, 0},
-        { 0, 0, 1},
+        { 0, 0, 0 },
+        { 0, 0, 1 },
     };
     const Matrix4 r = homorotate(ccw_angle, z);
     const Matrix4 expected = Matrix4::from_rows({
-        {0,  -1, 0, 0},
-        { 1, 0,  0, 0},
-        { 0, 0,  1, 0},
-        { 0, 0,  0, 1}
+        { 0, -1, 0, 0 },
+        { 1, 0,  0, 0 },
+        { 0, 0,  1, 0 },
+        { 0, 0,  0, 1 }
     });
     // dprint("final r", r);
     // dprint("expected value", expected);
@@ -240,15 +241,15 @@ TEST(Basic, Homorotate2)
     using namespace m;
     const fp ccw_angle = std::numbers::pi / 2;
     const Ray y {
-        {0,  0, 0},
-        { 0, 1, 0},
+        { 0, 0, 0 },
+        { 0, 1, 0 },
     };
     const Matrix4 r = homorotate(ccw_angle, y);
     const Matrix4 expected = Matrix4::from_rows({
-        {0,   0, 1, 0},
-        { 0,  1, 0, 0},
-        { -1, 0, 0, 0},
-        { 0,  0, 0, 1}
+        { 0,  0, 1, 0 },
+        { 0,  1, 0, 0 },
+        { -1, 0, 0, 0 },
+        { 0,  0, 0, 1 }
     });
     // dprint("final r", r);
     // dprint("expected value", expected);
@@ -268,15 +269,15 @@ TEST(Basic, Homorotate3)
     using namespace m;
     const fp ccw_angle = std::numbers::pi / 2;
     const Ray x {
-        {0,  0, 0},
-        { 1, 0, 0},
+        { 0, 0, 0 },
+        { 1, 0, 0 },
     };
     const Matrix4 r = homorotate(ccw_angle, x);
     const Matrix4 expected = Matrix4::from_rows({
-        {1,  0, 0,  0},
-        { 0, 0, -1, 0},
-        { 0, 1, 0,  0},
-        { 0, 0, 0,  1}
+        { 1, 0, 0,  0 },
+        { 0, 0, -1, 0 },
+        { 0, 1, 0,  0 },
+        { 0, 0, 0,  1 }
     });
     dprint("final r", r);
     dprint("expected value", expected);
@@ -383,12 +384,12 @@ TEST(Basic, IntersectAAInner3)
 TEST(Basic, IntersectAAInner4)
 {
     std::vector<Vec3f> pns {
-        {0,   0,  1 },
-        { 0,  0,  -1},
-        { 0,  1,  0 },
-        { 0,  -1, 0 },
-        { 1,  0,  0 },
-        { -1, 0,  0 }
+        { 0,  0,  1  },
+        { 0,  0,  -1 },
+        { 0,  1,  0  },
+        { 0,  -1, 0  },
+        { 1,  0,  0  },
+        { -1, 0,  0  }
     };
     Vec3f start3 { 0, 0, 0 };
     Vec3f end3 { 0.5, 0.5, 0.5 };
@@ -421,12 +422,12 @@ TEST(Basic, IntersectAAInner4)
 TEST(Basic, IntersectAAInner5)
 {
     std::vector<Vec3f> pns {
-        {0,   0,  1 },
-        { 0,  0,  -1},
-        { 0,  1,  0 },
-        { 0,  -1, 0 },
-        { 1,  0,  0 },
-        { -1, 0,  0 }
+        { 0,  0,  1  },
+        { 0,  0,  -1 },
+        { 0,  1,  0  },
+        { 0,  -1, 0  },
+        { 1,  0,  0  },
+        { -1, 0,  0  }
     };
     // Trivially Fails every plane but 3
     Vec3f start3 { 10, 10, 10 };
@@ -467,12 +468,12 @@ TEST(Basic, IntersectAAInner5)
 TEST(Basic, IntersectAAInner6)
 {
     std::vector<Vec3f> pns {
-  // {0,   0,  1 },
-  // { 0,  0,  -1},
-  // { 0,  1,  0 },
-        {0, -1, 0},
- // { 1,  0,  0 },
-  // { -1, 0,  0 }
+        // {0,   0,  1 },
+        // { 0,  0,  -1},
+        // { 0,  1,  0 },
+        { 0, -1, 0 },
+        // { 1,  0,  0 },
+        // { -1, 0,  0 }
     };
     Vec3f start3 { 0, 0, 0 };
     Vec3f end3 { 0, 10, 0 };
@@ -491,7 +492,7 @@ TEST(Basic, IntersectAAInner6)
             Vec4f end = end3.homopoint(1.0 / i);
             HomoLine input { start, end };
             HomoLine expected {
-                start, {0, 1, 0, 1}
+                start, { 0, 1, 0, 1 }
             };
             auto result = clip_aa_inner(pn, input);
             dprint("the actual returned ending", result.l.end);
@@ -516,12 +517,12 @@ TEST(Basic, IntersectAAInner6)
 TEST(Basic, IntersectAAInner7)
 {
     std::vector<Vec3f> pns {
-  // {0,   0,  1 },
-  // { 0,  0,  -1},
-  // { 0,  1,  0 },
-        {0, -1, 0},
- // { 1,  0,  0 },
-  // { -1, 0,  0 }
+        // {0,   0,  1 },
+        // { 0,  0,  -1},
+        // { 0,  1,  0 },
+        { 0, -1, 0 },
+        // { 1,  0,  0 },
+        // { -1, 0,  0 }
     };
     Vec3f start3 { 0, 0, 0 };
     Vec3f end3 { 0, 10, 0 };
@@ -540,7 +541,7 @@ TEST(Basic, IntersectAAInner7)
             Vec4f end = end3.homopoint(1.0 / i);
             HomoLine input { start, end };
             HomoLine expected {
-                start, {0, 1, 0, 1}
+                start, { 0, 1, 0, 1 }
             };
             auto result = clip_aa_inner(pn, input);
             dprint("the actual returned ending", result.l.end);
