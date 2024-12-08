@@ -1,5 +1,4 @@
 #pragma once
-#include <X11/Xdefs.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
@@ -47,9 +46,10 @@ struct IndexPair
 Vec3f normalize(const Vec3f& a);
 Matrix4 homotranslate(const Vec3f& additive);
 Matrix4 homorotate(double ccw_angle, const Ray& axis);
-
 Clip clip_aa_inner(const Vec3f& n, const HomoLine& l,
                    fp epsilon = ceng_epsilon);
+Vec3f barycentric(const Vec2f& a, const Vec2f& b, const Vec2f& c,
+                  const Vec2f& p);
 
 constexpr fp dot(const Vec2f& lhs, const Vec2f& rhs);
 constexpr fp dot(const Vec3f& lhs, const Vec3f& rhs);

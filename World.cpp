@@ -110,7 +110,7 @@ World::World(m::Vec3f v0, m::Vec3f v1, m::Vec3f v2)
         { v0, { r } },
         { v1, { r } },
         { v2, { r } },
-        Face::RenderMode::WIREFRAME,
+        WorldFace::RenderMode::WIREFRAME,
         { m::surface_normal(v0, v1, v2) }
     });
 }

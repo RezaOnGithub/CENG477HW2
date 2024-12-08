@@ -3,15 +3,14 @@
 #include "CENG477.hpp"
 
 #include <cstddef>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
 // Cook everything into a list of faces with attributes
 // Apply all modeling transformations, handle instancing transparently
 
-struct Vertex;
-struct Face;
+struct WorldVertex;
+struct WorldFace;
 // complemeted by FragmentAttribteFinal in rasterizer and renderer
 struct VertexAttributeInterp;
 struct FaceAttributeUniform;
@@ -57,59 +56,32 @@ ViewConfig sample_view(m::fp rot = 0);
 // sample world with a single triangle at (1,0,0) (0,1,0) (0,0,1)
 World sample_world();
 
-struct VertexAttributeInterp
-{
-    m::Pixel noperspective_ceng477_color;
-    // m::Vec3f noperspective_vertex_normal;
-};
-
-struct FaceAttributeUniform
-{
-    m::Vec3f uniform_surface_normal;
-};
-
-struct Vertex
+struct WorldVertex
 {
     m::Vec3f wc;
-    VertexAttributeInterp interp;
+    m::Pixel ceng477_color;
 };
 
-struct Face
+struct WorldFace
 {
-    Vertex v0, v1, v2;
+    WorldVertex v0, v1, v2;
     enum class RenderMode
     {
         WIREFRAME,
         SOLID,
         // ALPHA
     } mode;
-    FaceAttributeUniform uniform;
-
-    inline Vertex operator[](size_t i) const
-    {
-        switch (i)
-        {
-        case 0 :
-            return v0;
-        case 1 :
-            return v1;
-        case 2 :
-            return v2;
-        default :
-            throw std::runtime_error("Invalid Index!");
-        }
-    }
 };
 
 struct World
 {
 private:
-    std::vector<Face> fs;
+    std::vector<WorldFace> fs;
 public:
     World(const ceng::Scene& s);
     World(m::Vec3f v0, m::Vec3f v1, m::Vec3f v2);
 
-    [[nodiscard]] inline Face get_face(size_t i) const
+    [[nodiscard]] inline WorldFace get_face(size_t i) const
     {
         return fs[i];
     }

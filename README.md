@@ -102,7 +102,7 @@ A scene in some format.
 
 - A single `S1Face` or nothing
 
-## Step 3: Device (`t_projection`, Clipping)
+## Step 3: Device (`t_projection`)
 
 ### Input
 
@@ -137,6 +137,8 @@ A scene in some format.
 - A single `S4Polygon`
 
 ### Processing
+
+- First, take polygon vertices to viewport coordinates
 
 ### Output
 
