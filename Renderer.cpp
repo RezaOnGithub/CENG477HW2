@@ -200,6 +200,21 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
         vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
     }
 
+    AttributeArray a0, a1, a2;
+    constexpr size_t A_CENG477_COLOR = 1;
+    constexpr size_t A_DEPTH = 2;
+
+    a0[A_CENG477_COLOR] = { static_cast<fp>(f.mother.v0.ceng477_color.r),
+                            static_cast<fp>(f.mother.v0.ceng477_color.g),
+                            static_cast<fp>(f.mother.v0.ceng477_color.b) };
+    a1[A_CENG477_COLOR] = { static_cast<fp>(f.mother.v1.ceng477_color.r),
+                            static_cast<fp>(f.mother.v1.ceng477_color.g),
+                            static_cast<fp>(f.mother.v1.ceng477_color.b) };
+    a2[A_CENG477_COLOR] = { static_cast<fp>(f.mother.v2.ceng477_color.r),
+                            static_cast<fp>(f.mother.v2.ceng477_color.g),
+                            static_cast<fp>(f.mother.v2.ceng477_color.b) };
+    a0[A_DEPTH];
+
     auto noperspective = [&](Vec2f vpp, size_t attrib_index) -> GenericAttribute
     {
         // perform barycentric interpolation for each component of generic

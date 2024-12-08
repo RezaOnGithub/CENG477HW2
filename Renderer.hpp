@@ -9,30 +9,33 @@ namespace renderer
 {
 using GenericAttribute = m::Vec3f;
 
-struct AttributeArray
+class AttributeArray
 {
+private:
     std::vector<GenericAttribute> a;
+public:
+    AttributeArray() :
+        a(16, { 0, 0, 0 })
+    {
+    }
 
-    constexpr GenericAttribute operator[](size_t i)
+    inline GenericAttribute& operator[](size_t i)
     {
         return a[i];
     }
+
+    [[nodiscard]] inline m::Pixel ceng477_color() const
+    {
+        return { static_cast<unsigned char>(a[1].x),
+                 static_cast<unsigned char>(a[1].y),
+                 static_cast<unsigned char>(a[1].z) };
+    }
+
+    [[nodiscard]] inline float depth() const
+    {
+        return static_cast<float>(a[2].z);
+    }
 };
-
-constexpr size_t i_noperspective_ceng477_color = 1;
-
-constexpr m::Pixel a_ceng477_color(const GenericAttribute& a)
-{
-    return { static_cast<unsigned char>(a.x), static_cast<unsigned char>(a.y),
-             static_cast<unsigned char>(a.z) };
-}
-
-constexpr size_t i_noperspective_depth = 2;
-
-constexpr m::fp a_depth(const GenericAttribute& a)
-{
-    return a.z;
-}
 
 struct S1Face
 {

@@ -38,7 +38,6 @@ add_executable(rasterizer
         CENG477.cpp
         Base.cpp
         World.cpp
-        Rasterizer.cpp
         Renderer.cpp
 )
 
