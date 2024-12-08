@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(thirdparty/raylib)
-# include_directories(thirdparty/include) # raygui, stb_image_write
+include_directories(thirdparty/include) # raygui, stb_image_write
 add_subdirectory(thirdparty/googletest)
 # add_subdirectory(thirdparty/assimp)     # a model loading framework
 #add_subdirectory(thirdparty/glm) # to check my math!
@@ -36,6 +36,12 @@ add_executable(rasterizer
         main_rasterizer.cpp
         tinyxml2.cpp
         CENG477.cpp
+        Base.cpp
+        World.cpp
+        Renderer.cpp
+)
+add_executable(qnd
+        main_quickndirty.cpp
         Base.cpp
         World.cpp
         Renderer.cpp

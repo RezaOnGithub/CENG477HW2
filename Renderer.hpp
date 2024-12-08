@@ -2,6 +2,7 @@
 #include "Base.hpp"
 #include "World.hpp"
 
+#include <cassert>
 #include <cstddef>
 #include <vector>
 
@@ -11,29 +12,29 @@ using GenericAttribute = m::Vec3f;
 
 class AttributeArray
 {
-private:
-    std::vector<GenericAttribute> a;
 public:
+    std::vector<GenericAttribute> a;
+
     AttributeArray() :
         a(16, { 0, 0, 0 })
     {
     }
 
-    inline GenericAttribute& operator[](size_t i)
+    AttributeArray(const std::vector<GenericAttribute>& rhs) :
+        a(rhs)
+    {
+        assert(rhs.size() <= 16);
+        int diff = 16 - rhs.size();
+        while (diff-- > 0)
+        {
+            a.emplace_back();
+        }
+        assert(a.size() == 16);
+    }
+
+    inline const GenericAttribute& operator[](size_t i) const
     {
         return a[i];
-    }
-
-    [[nodiscard]] inline m::Pixel ceng477_color() const
-    {
-        return { static_cast<unsigned char>(a[1].x),
-                 static_cast<unsigned char>(a[1].y),
-                 static_cast<unsigned char>(a[1].z) };
-    }
-
-    [[nodiscard]] inline float depth() const
-    {
-        return static_cast<float>(a[2].z);
     }
 };
 

@@ -22,23 +22,23 @@ constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
              static_cast<long>(-vpc.y + (v.pixel_grid_rows / 2.0)) };
 }
 
-// TODO this is completely wrong. Use a zfail approach!
-std::vector<Fragment> ztest(std::vector<std::vector<float>>& zbuffer,
-                            const std::vector<Fragment>& fbuffer)
-{
-    std::vector<Fragment> out {};
-    for (auto frag : fbuffer)
-    {
-        const size_t row = frag.pc.row_from_top;
-        const size_t column = frag.pc.column_from_left;
-        if (zbuffer[row][column] > frag.attrib.depth)
-        {
-            out.push_back(frag);
-            zbuffer[row][column] = frag.attrib.depth;
-        }
-    }
-    return out;
-}
+// // TODO this is completely wrong. Use a zfail approach!
+// std::vector<Fragment> ztest(std::vector<std::vector<float>>& zbuffer,
+//                             const std::vector<Fragment>& fbuffer)
+// {
+//     std::vector<Fragment> out {};
+//     for (auto frag : fbuffer)
+//     {
+//         const size_t row = frag.pc.row_from_top;
+//         const size_t column = frag.pc.column_from_left;
+//         if (zbuffer[row][column] > frag.attrib.depth)
+//         {
+//             out.push_back(frag);
+//             zbuffer[row][column] = frag.attrib.depth;
+//         }
+//     }
+//     return out;
+// }
 
 std::vector<Vec2f> midpoint_algorithm(Vec2f start, Vec2f end)
 {
@@ -109,13 +109,18 @@ S1Face step1_camera(const WorldFace& f, const ViewConfig& v)
 }
 
 S2Face step2_bfc(const S1Face& f, const ViewConfig& v)
+
 {
-    Vec4f normal =
-        v.t_camera * f.mother.uniform.uniform_surface_normal.homovector();
-    if (v.cull_backface and dot(v.gaze.homovector(), normal) >= 0)
-    {
-        return { f.mother, true, f.cc0, f.cc1, f.cc2 };
-    }
+    // FIXME
+    // Vec4f normal =
+    //     v.t_camera * surface_normal(f.cc0.dehomogenize(),
+    //     f.cc1.dehomogenize(),
+    //                                 f.cc2.dehomogenize())
+    //                      .homovector();
+    // if (v.cull_backface and dot(v.gaze.homovector(), normal) >= 0)
+    // {
+    //     return { f.mother, true, f.cc0, f.cc1, f.cc2 };
+    // }
     return { f.mother, false, f.cc0, f.cc1, f.cc2 };
 }
 
@@ -200,57 +205,62 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
         vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
     }
 
-    AttributeArray a0, a1, a2;
-    constexpr size_t A_CENG477_COLOR = 1;
-    constexpr size_t A_DEPTH = 2;
+    AttributeArray a0;
+    AttributeArray a1;
+    AttributeArray a2;
+    constexpr size_t i_ceng477_color = 1;
+    auto ceng477_color = [](const AttributeArray& a) -> m::Pixel
+    {
+        return { static_cast<unsigned char>(a[i_ceng477_color].x),
+                 static_cast<unsigned char>(a[i_ceng477_color].y),
+                 static_cast<unsigned char>(a[i_ceng477_color].z) };
+    };
+    constexpr size_t i_depth = 2;
+    auto depth = [](const AttributeArray& a) -> float
+    {
+        return static_cast<float>(a[i_depth].z);
+    };
+    auto ndc2depth = [](fp x) -> fp
+    {
+        return (x + 1) / 2.0;
+    };
 
-    a0[A_CENG477_COLOR] = { static_cast<fp>(f.mother.v0.ceng477_color.r),
-                            static_cast<fp>(f.mother.v0.ceng477_color.g),
-                            static_cast<fp>(f.mother.v0.ceng477_color.b) };
-    a1[A_CENG477_COLOR] = { static_cast<fp>(f.mother.v1.ceng477_color.r),
-                            static_cast<fp>(f.mother.v1.ceng477_color.g),
-                            static_cast<fp>(f.mother.v1.ceng477_color.b) };
-    a2[A_CENG477_COLOR] = { static_cast<fp>(f.mother.v2.ceng477_color.r),
-                            static_cast<fp>(f.mother.v2.ceng477_color.g),
-                            static_cast<fp>(f.mother.v2.ceng477_color.b) };
-    a0[A_DEPTH];
+    a0.a[i_ceng477_color] = { static_cast<fp>(f.mother.v0.ceng477_color.r),
+                              static_cast<fp>(f.mother.v0.ceng477_color.g),
+                              static_cast<fp>(f.mother.v0.ceng477_color.b) };
+    a1.a[i_ceng477_color] = { static_cast<fp>(f.mother.v1.ceng477_color.r),
+                              static_cast<fp>(f.mother.v1.ceng477_color.g),
+                              static_cast<fp>(f.mother.v1.ceng477_color.b) };
+    a2.a[i_ceng477_color] = { static_cast<fp>(f.mother.v2.ceng477_color.r),
+                              static_cast<fp>(f.mother.v2.ceng477_color.g),
+                              static_cast<fp>(f.mother.v2.ceng477_color.b) };
+    a0.a[i_depth] = { 0, 0, ndc2depth(f.trig_ndc0.z) };
+    a1.a[i_depth] = { 0, 0, ndc2depth(f.trig_ndc1.z) };
+    a2.a[i_depth] = { 0, 0, ndc2depth(f.trig_ndc2.z) };
 
     auto noperspective = [&](Vec2f vpp, size_t attrib_index) -> GenericAttribute
     {
         // perform barycentric interpolation for each component of generic
         // attribute (currently x,y,z)
         const Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
-        const Vec3f axs = { f.mother.v0.interp[attrib_index].x,
-                            f.mother.v1.interp[attrib_index].x,
-                            f.mother.v2.interp[attrib_index].x };
-        const Vec3f ays = { f.mother.v0.interp[attrib_index].y,
-                            f.mother.v1.interp[attrib_index].y,
-                            f.mother.v2.interp[attrib_index].y };
-        const Vec3f azs = { f.mother.v0.interp[attrib_index].z,
-                            f.mother.v1.interp[attrib_index].z,
-                            f.mother.v2.interp[attrib_index].z };
+        const Vec3f axs = { a0[attrib_index].x, a1[attrib_index].x,
+                            a2[attrib_index].x };
+        const Vec3f ays = { a0[attrib_index].y, a1[attrib_index].y,
+                            a2[attrib_index].y };
+        const Vec3f azs = { a0[attrib_index].z, a1[attrib_index].z,
+                            a2[attrib_index].z };
         return { dot(b, axs), dot(b, ays), dot(b, azs) };
     };
 
     std::vector<Fragment> frag {};
     for (auto vpp : vp_candidates)
     {
-        frag.push_back({
-            vpc2pc(vpp, v),
-            {noperspective(vpp, i_noperspective_ceng477_color),
-                      noperspective(vpp, i_noperspective_depth)}
-        });
+        frag.push_back({ vpc2pc(vpp, v),
+                         { { noperspective(vpp, i_ceng477_color),
+                             noperspective(vpp, i_depth) } } });
     }
 
-    RasterTriangle r { f, {} };
-    for (auto c : fragc)
-    {
-        // TODO throwing away Z for now!
-        r.out.push_back({
-            c, {{ 255, 0, 0 }, -1}
-        });
-    }
-    return r;
+    return { f.mother, frag };
 }
 
 // Rasterize every triangle, perform depth test, write to an output buffer
@@ -259,8 +269,6 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
     const long count = w.face_count();
     std::vector<Fragment> fragments {};
     std::vector<Fragment> draw {};
-    std::vector<std::vector<float>> zbuffer(
-        v.pixel_grid_rows, std::vector<float>(v.pixel_grid_columns, 1.0F));
     std::vector<std::vector<Pixel>> pbuffer(
         v.pixel_grid_rows,
         std::vector<Pixel>(v.pixel_grid_columns, v.bg_color));
@@ -268,18 +276,25 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
     // rasterize every triangle in the scene
     for (size_t i = 0; i < count; i++)
     {
-        auto raster = rasterize(w, v, i);
-        fragments.insert(fragments.end(), raster.out.begin(), raster.out.end());
+        const WorldFace& f = w.get_face(i);
+        const auto& s1 = step1_camera(f, v);
+        const auto& s2 = step2_bfc(s1, v);
+        const auto& s3 = step3_device(s2, v);
+        const auto& s4 = step4_sutherland_hodgman(s3);
+        const auto& s5 = step5_rasterize(s4, v);
+        fragments.insert(fragments.end(), s5.out.begin(), s5.out.end());
     }
-
-    // perform depth-test
-    draw = ztest(zbuffer, fragments);
 
     // turn surviving fragments into pixels
     for (auto d : draw)
     {
-        pbuffer[d.pc.row_from_top][d.pc.column_from_left] =
-            d.attrib.ceng477_color;
+        auto ceng477_color = [](const AttributeArray& a) -> m::Pixel
+        {
+            return { static_cast<unsigned char>(a[1].x),
+                     static_cast<unsigned char>(a[1].y),
+                     static_cast<unsigned char>(a[1].z) };
+        };
+        pbuffer[d.pc.row_from_top][d.pc.column_from_left] = ceng477_color(d.a);
     }
 
     return pbuffer;
