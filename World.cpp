@@ -2,7 +2,6 @@
 
 #include "Base.hpp"
 #include "CENG477.hpp"
-#include "Rasterizer.hpp"
 
 #include <cstdlib>
 #include <string>
@@ -30,7 +29,7 @@ ViewConfig::ViewConfig(const char* name, long rows, long columns,
 m::Matrix4 viewport_transformation(long pixel_grid_rows,
                                    long pixel_grid_columns)
 {
-    return Matrix4::from_rows({
+    return m::Matrix4::from_rows({
         {pixel_grid_rows / 2.0, 0,                        0, (pixel_grid_rows - 1) / 2.0   },
         { 0,                    pixel_grid_columns / 2.0, 0, (pixel_grid_columns - 1) / 2.0},
         { 0,                    0,                        1, 0                             },
@@ -107,11 +106,10 @@ World::World(m::Vec3f v0, m::Vec3f v1, m::Vec3f v2)
 {
     m::Pixel r { 255, 0, 0 };
     fs.push_back({
-        { v0, { r } },
-        { v1, { r } },
-        { v2, { r } },
+        {v0,  { r }},
+        { v1, { r }},
+        { v2, { r }},
         WorldFace::RenderMode::WIREFRAME,
-        { m::surface_normal(v0, v1, v2) }
     });
 }
 

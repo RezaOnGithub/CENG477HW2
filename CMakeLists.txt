@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_subdirectory(thirdparty/raylib)
+# add_subdirectory(thirdparty/raylib)
 include_directories(thirdparty/include) # raygui, stb_image_write
 add_subdirectory(thirdparty/googletest)
 # add_subdirectory(thirdparty/assimp)     # a model loading framework

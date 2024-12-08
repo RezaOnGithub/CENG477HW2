@@ -1,6 +1,5 @@
 #include "Base.hpp"
 #include "CENG477.hpp"
-#include "Rasterizer.hpp"
 #include "World.hpp"
 
 #include <cstddef>
@@ -11,6 +10,8 @@
 #include <iostream>
 #include <numbers>
 #include <optional>
+
+using namespace m;
 
 namespace util
 {
