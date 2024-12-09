@@ -178,6 +178,11 @@ struct HomoLine
     }
 };
 
+struct Line2d
+{
+    Vec2f start, end;
+};
+
 struct Clip
 {
     HomoLine l;
@@ -466,6 +471,16 @@ inline void dprint(const char* const s, const Vec3f& m)
 {
     printf("Vec3f %s:\n", s);
     for (size_t i = 0; i < 3; i++)
+    {
+        printf("\t%f\n", m.row(i));
+    }
+    puts("");
+}
+
+inline void dprint(const char* const s, const Vec2f& m)
+{
+    printf("Vec3f %s:\n", s);
+    for (size_t i = 0; i < 2; i++)
     {
         printf("\t%f\n", m.row(i));
     }

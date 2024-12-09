@@ -5,6 +5,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -42,7 +43,7 @@ int main(int argc, char** argv)
                 data[base_index + 2] = img[i][j].b;
             }
         }
-        std::string name = v.filename.substr(0, v.filename.size() - 2);
+        std::string name = v.filename.substr(0, v.filename.size() - 2) + "ng";
         write_image(name.c_str(), data, v.pixel_grid_columns,
                     v.pixel_grid_rows);
     }

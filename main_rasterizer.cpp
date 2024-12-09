@@ -2,6 +2,7 @@
 #include "Renderer.hpp"
 #include "World.hpp"
 
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <vector>

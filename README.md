@@ -169,6 +169,7 @@ where $Y$ becomes larger as we go *down*, unlike Viewport Coordinates!
 
 # TODO
 
-- Tweak Rasterizer interface
-- Midpoint Algorithm
+- ZTest
 - Filling in shapes
+- Wireframe hack
+- BFC proper

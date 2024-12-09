@@ -2,41 +2,11 @@
 #include "Base.hpp"
 #include "World.hpp"
 
-#include <cassert>
-#include <cstddef>
+#include <utility>
 #include <vector>
 
 namespace renderer
 {
-using GenericAttribute = m::Vec3f;
-
-class AttributeArray
-{
-public:
-    std::vector<GenericAttribute> a;
-
-    AttributeArray() :
-        a(16, { 0, 0, 0 })
-    {
-    }
-
-    AttributeArray(const std::vector<GenericAttribute>& rhs) :
-        a(rhs)
-    {
-        assert(rhs.size() <= 16);
-        int diff = 16 - rhs.size();
-        while (diff-- > 0)
-        {
-            a.emplace_back();
-        }
-        assert(a.size() == 16);
-    }
-
-    inline const GenericAttribute& operator[](size_t i) const
-    {
-        return a[i];
-    }
-};
 
 struct S1Face
 {
@@ -61,7 +31,7 @@ struct S4Polygon
 {
     WorldFace mother;
     m::Vec4f trig_ndc0, trig_ndc1, trig_ndc2;
-    std::vector<m::Vec4f> poly_ndc;
+    std::vector<m::HomoLine> edge;
 };
 
 struct PixelCoordinate
@@ -73,7 +43,12 @@ struct PixelCoordinate
 struct Fragment
 {
     PixelCoordinate pc;
-    AttributeArray a;
+
+    struct Attribute
+    {
+        m::Vec3f ceng477_color;
+        m::Vec3f depth;
+    } a;
 };
 
 struct S5Raster

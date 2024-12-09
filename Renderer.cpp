@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstddef>
 #include <optional>
+#include <utility>
 #include <vector>
 
 using namespace m;
@@ -18,8 +19,18 @@ using namespace renderer;
 
 constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
 {
-    return { static_cast<long>(vpc.x - (v.pixel_grid_columns / 2.0)),
-             static_cast<long>(-vpc.y + (v.pixel_grid_rows / 2.0)) };
+    fp row_from_top = (static_cast<fp>(v.pixel_grid_rows) / 2.0) - vpc.y;
+    fp column_from_left = vpc.x - (static_cast<fp>(v.pixel_grid_columns) / 2.0);
+    // printf("Half-a-row %lf\n", (static_cast<fp>(v.pixel_grid_rows) / 2.0));
+    // printf("Half-a-col %lf\n", (static_cast<fp>(v.pixel_grid_columns)
+    // / 2.0)); printf("ROW: %lf\t%lf\t%li\n", vpc.y, row_from_top,
+    //        static_cast<long>(round(row_from_top)));
+    // printf("COL: %lf\t%lf\t%li\n", vpc.x, column_from_left,
+    //        static_cast<long>(round(column_from_left)));
+    return {
+        static_cast<long>(round(row_from_top)),
+        static_cast<long>(round(column_from_left)),
+    };
 }
 
 // // TODO this is completely wrong. Use a zfail approach!
@@ -142,15 +153,18 @@ S4Polygon step4_sutherland_hodgman(const S3Face& f)
         { 1,  0,  0 },
         { -1, 0,  0 }
     };
-    std::vector<Vec4f> ndc { f.ndc0, f.ndc1, f.ndc2 };
+    std::vector<m::HomoLine> ndc {
+        {f.ndc0,  f.ndc1},
+        { f.ndc1, f.ndc2},
+        { f.ndc2, f.ndc0}
+    };
+    std::vector<m::HomoLine> new_ndc {};
+
     for (auto normal : plane_normals)
     {
-        std::vector<Vec4f> new_ndc {};
-        for (int i = 0; i < ndc.size(); i++)
+        for (auto line : ndc)
         {
-            const Vec4f first = ndc[i];
-            const Vec4f second = ndc[(i + 1) % ndc.size()];
-            auto clip = clip_aa_inner(normal, { first, second });
+            auto clip = clip_aa_inner(normal, { line.start, line.end });
             // TODO does it even make a difference if I used clip's output?
             switch (clip.t)
             {
@@ -158,107 +172,107 @@ S4Polygon step4_sutherland_hodgman(const S3Face& f)
                 // Hope for the best!
                 break;
             case m::Clip::ClipType::CutHead :
-                new_ndc.push_back(clip.l.start);
-                new_ndc.push_back(second);
+                new_ndc.emplace_back(clip.l.start, line.end);
                 break;
             case m::Clip::ClipType::CutTail :
-                new_ndc.push_back(first);
-                new_ndc.push_back(clip.l.end);
+                new_ndc.emplace_back(line.start, clip.l.end);
                 break;
             case m::Clip::ClipType::NoCut :
-                new_ndc.push_back(first);
-                new_ndc.push_back(second);
+                new_ndc.emplace_back(line.start, line.end);
                 break;
             }
         }
-        ndc = new_ndc;
+        ndc.erase(ndc.begin(), ndc.end());
+        ndc.insert(ndc.end(), new_ndc.begin(), new_ndc.end());
+        new_ndc.erase(new_ndc.begin(), new_ndc.end());
     }
     return { f.mother, f.ndc0, f.ndc1, f.ndc2, ndc };
 }
 
 S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
 {
-    // TODO currently focusing to get wirefram right. implement solid later!
-
-    auto dehomogenize_to_2d = [](Vec4f x) -> Vec2f
+    auto dehomogenize_to_2d = [](Vec4f v) -> Vec2f
     {
-        return { x.dehomogenize().x, x.dehomogenize().y };
+        return { v.dehomogenize().x, v.dehomogenize().y };
     };
     const Vec2f trig_vpc0 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc0);
     const Vec2f trig_vpc1 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc1);
     const Vec2f trig_vpc2 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc2);
-    // TODO how do you "map" in C++?
-    std::vector<Vec2f> poly_vpc {};
-    for (auto x : f.poly_ndc)
-    {
-        poly_vpc.push_back(dehomogenize_to_2d(v.t_viewport * x));
-    }
 
-    std::vector<Vec2f> vp_candidates {};
-    for (size_t i = 0; i < poly_vpc.size(); i++)
-    {
-        // FIXME implement a hack so that clipped boundaries don't get drawn!
-        const size_t ei = (i + 1) % poly_vpc.size();
-        const Vec2f start = poly_vpc[i];
-        const Vec2f end = poly_vpc[ei];
-        const std::vector<Vec2f> l = midpoint_algorithm(start, end);
-        vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
-    }
+    dprint("trig_vpc0", trig_vpc0);
+    dprint("trig_ndc0", f.trig_ndc0);
+    printf("fragment coordinate X%li Y%li!\n",
+           vpc2pc(trig_vpc0, v).column_from_left,
+           vpc2pc(trig_vpc0, v).row_from_top);
 
-    AttributeArray a0;
-    AttributeArray a1;
-    AttributeArray a2;
-    constexpr size_t i_ceng477_color = 1;
-    auto ceng477_color = [](const AttributeArray& a) -> m::Pixel
-    {
-        return { static_cast<unsigned char>(a[i_ceng477_color].x),
-                 static_cast<unsigned char>(a[i_ceng477_color].y),
-                 static_cast<unsigned char>(a[i_ceng477_color].z) };
+    // std::vector<m::Line2d>
+    // vpc_edge(f.edge.size());
+    // for (const auto& line : f.edge)
+    // {
+    //     vpc_edge.push_back({ dehomogenize_to_2d(v.t_viewport * line.start),
+    //                          dehomogenize_to_2d(v.t_viewport * line.end) });
+    // }
+
+    // // Candidates are not-quite-fragments in viewport coordinates
+    // std::vector<Vec2f> vp_candidates {};
+    // for (const auto& vpc_line : vpc_edge)
+    // {
+    //     const std::vector<Vec2f> l =
+    //         midpoint_algorithm(vpc_line.start, vpc_line.end);
+    //     vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
+    // }
+
+    // Fragment::Attribute a0 {};
+    // Fragment::Attribute a1 {};
+    // Fragment::Attribute a2 {};
+
+    // auto ndc2depth = [](fp x) -> fp
+    // {
+    //     return (x + 1) / 2.0;
+    // };
+
+    // a0.ceng477_color = { static_cast<fp>(f.mother.v0.ceng477_color.r),
+    //                      static_cast<fp>(f.mother.v0.ceng477_color.g),
+    //                      static_cast<fp>(f.mother.v0.ceng477_color.b) };
+    // a1.ceng477_color = { static_cast<fp>(f.mother.v1.ceng477_color.r),
+    //                      static_cast<fp>(f.mother.v1.ceng477_color.g),
+    //                      static_cast<fp>(f.mother.v1.ceng477_color.b) };
+    // a2.ceng477_color = { static_cast<fp>(f.mother.v2.ceng477_color.r),
+    //                      static_cast<fp>(f.mother.v2.ceng477_color.g),
+    //                      static_cast<fp>(f.mother.v2.ceng477_color.b) };
+    // a0.depth = { 0, 0, ndc2depth(f.trig_ndc0.z) };
+    // a1.depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
+    // a2.depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
+
+    // auto noperspective = [&](Vec2f vpp, m::Vec3f c0, m::Vec3f c1,
+    //                          m::Vec3f c2) -> m::Vec3f
+    // {
+    //     // perform barycentric interpolation for each component of generic
+    //     // attribute (currently x,y,z)
+    //     const Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
+    //     const Vec3f axs = { c0.x, c1.x, c2.x };
+    //     const Vec3f ays = { c0.y, c1.y, c2.y };
+    //     const Vec3f azs = { c0.z, c1.z, c2.z };
+    //     return { dot(b, axs), dot(b, ays), dot(b, azs) };
+    // };
+
+    // std::vector<Fragment> frag {};
+    // for (auto vpp : vp_candidates)
+    // {
+    //     frag.push_back({
+    //         vpc2pc(vpp, v),
+    //         {noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+    //                   a2.ceng477_color),
+    //                   noperspective(vpp, a0.depth, a1.depth, a2.depth)}
+    //     });
+    // }
+
+    m::Vec3f red { 255, 0, 0 };
+    std::vector<Fragment> frag {
+        {vpc2pc(trig_vpc0, v), { red, red }},
+ // { vpc2pc(trig_vpc1, v), { red, red }},
+  // { vpc2pc(trig_vpc2, v), { red, red }},
     };
-    constexpr size_t i_depth = 2;
-    auto depth = [](const AttributeArray& a) -> float
-    {
-        return static_cast<float>(a[i_depth].z);
-    };
-    auto ndc2depth = [](fp x) -> fp
-    {
-        return (x + 1) / 2.0;
-    };
-
-    a0.a[i_ceng477_color] = { static_cast<fp>(f.mother.v0.ceng477_color.r),
-                              static_cast<fp>(f.mother.v0.ceng477_color.g),
-                              static_cast<fp>(f.mother.v0.ceng477_color.b) };
-    a1.a[i_ceng477_color] = { static_cast<fp>(f.mother.v1.ceng477_color.r),
-                              static_cast<fp>(f.mother.v1.ceng477_color.g),
-                              static_cast<fp>(f.mother.v1.ceng477_color.b) };
-    a2.a[i_ceng477_color] = { static_cast<fp>(f.mother.v2.ceng477_color.r),
-                              static_cast<fp>(f.mother.v2.ceng477_color.g),
-                              static_cast<fp>(f.mother.v2.ceng477_color.b) };
-    a0.a[i_depth] = { 0, 0, ndc2depth(f.trig_ndc0.z) };
-    a1.a[i_depth] = { 0, 0, ndc2depth(f.trig_ndc1.z) };
-    a2.a[i_depth] = { 0, 0, ndc2depth(f.trig_ndc2.z) };
-
-    auto noperspective = [&](Vec2f vpp, size_t attrib_index) -> GenericAttribute
-    {
-        // perform barycentric interpolation for each component of generic
-        // attribute (currently x,y,z)
-        const Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
-        const Vec3f axs = { a0[attrib_index].x, a1[attrib_index].x,
-                            a2[attrib_index].x };
-        const Vec3f ays = { a0[attrib_index].y, a1[attrib_index].y,
-                            a2[attrib_index].y };
-        const Vec3f azs = { a0[attrib_index].z, a1[attrib_index].z,
-                            a2[attrib_index].z };
-        return { dot(b, axs), dot(b, ays), dot(b, azs) };
-    };
-
-    std::vector<Fragment> frag {};
-    for (auto vpp : vp_candidates)
-    {
-        frag.push_back({ vpc2pc(vpp, v),
-                         { { noperspective(vpp, i_ceng477_color),
-                             noperspective(vpp, i_depth) } } });
-    }
 
     return { f.mother, frag };
 }
@@ -266,15 +280,13 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
 // Rasterize every triangle, perform depth test, write to an output buffer
 std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
 {
-    const long count = w.face_count();
     std::vector<Fragment> fragments {};
-    std::vector<Fragment> draw {};
     std::vector<std::vector<Pixel>> pbuffer(
         v.pixel_grid_rows,
         std::vector<Pixel>(v.pixel_grid_columns, v.bg_color));
 
     // rasterize every triangle in the scene
-    for (size_t i = 0; i < count; i++)
+    for (size_t i = 0; i < w.face_count(); i++)
     {
         const WorldFace& f = w.get_face(i);
         const auto& s1 = step1_camera(f, v);
@@ -285,16 +297,30 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
         fragments.insert(fragments.end(), s5.out.begin(), s5.out.end());
     }
 
+    printf("resultant fragment count %lu\n", fragments.size());
+
     // turn surviving fragments into pixels
-    for (auto d : draw)
+    for (const auto& d : fragments)
     {
-        auto ceng477_color = [](const AttributeArray& a) -> m::Pixel
+        auto color = [](const m::Vec3f& c) -> m::Pixel
         {
-            return { static_cast<unsigned char>(a[1].x),
-                     static_cast<unsigned char>(a[1].y),
-                     static_cast<unsigned char>(a[1].z) };
+            return { static_cast<unsigned char>(
+                         c.x > 255 ? 255 : (c.x < 0 ? 0 : c.x)),
+                     static_cast<unsigned char>(
+                         c.y > 255 ? 255 : (c.y < 0 ? 0 : c.y)),
+                     static_cast<unsigned char>(
+                         c.z > 255 ? 255 : (c.z < 0 ? 0 : c.z)) };
         };
-        pbuffer[d.pc.row_from_top][d.pc.column_from_left] = ceng477_color(d.a);
+        if (d.pc.row_from_top < 0 || d.pc.column_from_left < 0 ||
+            d.pc.row_from_top >= v.pixel_grid_rows ||
+            d.pc.column_from_left >= v.pixel_grid_columns)
+        {
+            printf("invalid fragment coordinate %li %li!\n",
+                   d.pc.column_from_left, d.pc.row_from_top);
+            continue;
+        }
+        pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
+            color(d.a.ceng477_color);
     }
 
     return pbuffer;

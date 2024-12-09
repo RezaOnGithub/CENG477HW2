@@ -33,8 +33,8 @@ m::Matrix4 viewport_transformation(long pixel_grid_rows,
                                    long pixel_grid_columns)
 {
     return m::Matrix4::from_rows({
-        {pixel_grid_rows / 2.0, 0,                        0, (pixel_grid_rows - 1) / 2.0   },
-        { 0,                    pixel_grid_columns / 2.0, 0, (pixel_grid_columns - 1) / 2.0},
+        {pixel_grid_columns / 2.0, 0,                        0, (pixel_grid_columns - 1) / 2.0   },
+        { 0,                    pixel_grid_rows / 2.0, 0, (pixel_grid_rows - 1) / 2.0},
         { 0,                    0,                        1, 0                             },
         { 0,                    0,                        0, 1                             }
     });
