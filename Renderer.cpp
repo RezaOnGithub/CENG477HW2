@@ -158,16 +158,16 @@ S4Polygon step4_sutherland_hodgman(const S3Face& f)
                 // Hope for the best!
                 break;
             case m::Clip::ClipType::CutHead :
-                ndc.push_back(clip.l.start);
-                ndc.push_back(second);
+                new_ndc.push_back(clip.l.start);
+                new_ndc.push_back(second);
                 break;
             case m::Clip::ClipType::CutTail :
-                ndc.push_back(first);
-                ndc.push_back(clip.l.end);
+                new_ndc.push_back(first);
+                new_ndc.push_back(clip.l.end);
                 break;
             case m::Clip::ClipType::NoCut :
-                ndc.push_back(first);
-                ndc.push_back(second);
+                new_ndc.push_back(first);
+                new_ndc.push_back(second);
                 break;
             }
         }

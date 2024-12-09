@@ -18,8 +18,9 @@ ViewConfig::ViewConfig(const char* name, long rows, long columns,
     bg_color(background_color),
     gaze(camera_gaze),
     t_viewport(viewport_transformation(rows, columns)),
-    t_projection(perspective_correct ? perspective_projection(f) :
-                                       orthographic_projection(f)),
+    t_projection(perspective_correct ?
+                     perspective_projection(f) :
+                     orthographic_projection(f)),
     t_camera(camera_transformation(camera_origin, camera_gaze, camera_up)),
     pixel_grid_rows(rows),
     pixel_grid_columns(columns),
@@ -31,10 +32,10 @@ m::Matrix4 viewport_transformation(long pixel_grid_rows,
                                    long pixel_grid_columns)
 {
     return m::Matrix4::from_rows({
-        { pixel_grid_rows / 2.0, 0,                        0, (pixel_grid_rows - 1) / 2.0    },
-        { 0,                     pixel_grid_columns / 2.0, 0, (pixel_grid_columns - 1) / 2.0 },
-        { 0,                     0,                        1, 0                              },
-        { 0,                     0,                        0, 1                              }
+        { pixel_grid_rows / 2.0, 0, 0, (pixel_grid_rows - 1) / 2.0 },
+        { 0, pixel_grid_columns / 2.0, 0, (pixel_grid_columns - 1) / 2.0 },
+        { 0, 0, 1, 0 },
+        { 0, 0, 0, 1 }
     });
 }
 
@@ -58,10 +59,10 @@ m::Matrix4 orthographic_projection(ViewFrustum f)
     const fp height = abs(f.top - f.bottom);
     const fp distance = abs(f.near - f.far);
     return Matrix4::from_rows({
-        { 2.0 / width, 0,            0,              abs(f.right + f.left) / width  },
-        { 0,           2.0 / height, 0,              abs(f.top + f.bottom) / height },
-        { 0,           0,            2.0 / distance, abs(f.near + f.far) / distance },
-        { 0,           0,            0,              1                              }
+        { 2.0 / width, 0, 0, abs(f.right + f.left) / width },
+        { 0, 2.0 / height, 0, abs(f.top + f.bottom) / height },
+        { 0, 0, 2.0 / distance, abs(f.near + f.far) / distance },
+        { 0, 0, 0, 1 }
     });
 }
 
@@ -74,19 +75,23 @@ m::Matrix4 perspective_projection(ViewFrustum vf)
     const fp f = -abs(vf.far);
     const Matrix4 orthographic = orthographic_projection(vf);
     const Matrix4 perspective = Matrix4::from_rows({
-        { n, 0, 0,     0      },
-        { 0, n, 0,     0      },
+        { n, 0, 0, 0 },
+        { 0, n, 0, 0 },
         { 0, 0, n + f, -f * n },
-        { 0, 0, 1,     0      }
+        { 0, 0, 1, 0 }
     });
     return orthographic * perspective;
 }
 
-m::Pixel color_to_pixel(const ceng::Color& c)
+struct C2B
 {
-    // TODO
-    return { 255, 255, 255 };
-}
+    ceng::Scene* s;
+    C2B() = delete;
+
+    C2B(ceng::Scene* scene) : s(scene)
+    {
+    }
+};
 
 std::vector<ViewConfig> extract_views(const ceng::Scene& s)
 {
@@ -94,7 +99,7 @@ std::vector<ViewConfig> extract_views(const ceng::Scene& s)
     result.reserve(s.cameras.size());
     for (auto* c : s.cameras)
     {
-        result.emplace_back(ViewConfig {
+        result.emplace_back(ViewConfig{
             c->outputFilename.c_str(),
             /*rows*/ c->verRes,
             /*cols*/ c->horRes,
@@ -102,7 +107,9 @@ std::vector<ViewConfig> extract_views(const ceng::Scene& s)
             { c->gaze.x, c->gaze.y, c->gaze.z },
             { c->v.x, c->v.y, c->v.z },
             { c->left, c->right, c->top, c->bottom, c->near, c->far },
-            color_to_pixel(s.backgroundColor),
+            { static_cast<unsigned char>(s.backgroundColor.r),
+              static_cast<unsigned char>(s.backgroundColor.r),
+              static_cast<unsigned char>(s.backgroundColor.r) },
             (c->projectionType != 0),
             s.cullingEnabled
         });
@@ -113,16 +120,16 @@ std::vector<ViewConfig> extract_views(const ceng::Scene& s)
 ViewConfig sample_view(m::fp r)
 {
     using namespace m;
-    Vec3f cam_v { -1, -1, -1 };
-    Vec3f cam_o { 1, 1, 1 };
+    Vec3f cam_v{ -10, -10, 0 };
+    Vec3f cam_o{ 10, 10, 0 };
     const Matrix4 rot = homorotate(r, {
-                                          { 0, 0, 0 },
-                                          { 0, 1, 0 }
-    });
+                                       { 0, 0, 0 },
+                                       { 0, 1, 0 }
+                                   });
     cam_o = (rot * cam_o.homopoint()).dehomogenize();
     cam_v = (rot * cam_v.homopoint()).dehomogenize();
-    const ViewFrustum vf { 5, -5, 5, -5, 0.2, 10 };
-    return ViewConfig("sample view", 800, 600, cam_o, cam_v, { 0, 1, 0 }, vf,
+    const ViewFrustum vf{ 5, -5, 5, -5, 0.2, 10 };
+    return ViewConfig("sample_view", 800, 600, cam_o, cam_v, { 0, 1, 0 }, vf,
                       { 0, 0, 0 }, true, false);
 }
 
@@ -133,7 +140,7 @@ World sample_world()
 
 World::World(m::Vec3f v0, m::Vec3f v1, m::Vec3f v2)
 {
-    m::Pixel r { 255, 0, 0 };
+    m::Pixel r{ 255, 0, 0 };
     fs.push_back({
         { v0, { r } },
         { v1, { r } },
