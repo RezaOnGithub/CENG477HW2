@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-
 void write_image(const char* filename, unsigned char* data, int width,
                  int height);
 
@@ -46,6 +45,7 @@ int main(int argc, char** argv)
         std::string name = v.filename.substr(0, v.filename.size() - 2) + "ng";
         write_image(name.c_str(), data, v.pixel_grid_columns,
                     v.pixel_grid_rows);
+        break;   // only the first one for now!
     }
 
     return 0;

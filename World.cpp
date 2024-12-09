@@ -125,7 +125,7 @@ ViewConfig sample_view(m::fp r)
     cam_o = (rot * cam_o.homopoint()).dehomogenize();
     cam_v = (rot * cam_v.homopoint()).dehomogenize();
     const ViewFrustum vf { 5, -5, 5, -5, 0.2, 10 };
-    return ViewConfig("sample_view", 800, 600, cam_o, cam_v, { 0, 1, 0 }, vf,
+    return ViewConfig("sample_view.ppm", 800, 600, cam_o, cam_v, { 0, 1, 0 }, vf,
                       { 0, 0, 0 }, true, false);
 }
 

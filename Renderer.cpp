@@ -19,8 +19,10 @@ using namespace renderer;
 
 constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
 {
-    fp row_from_top = (static_cast<fp>(v.pixel_grid_rows) / 2.0) - vpc.y;
-    fp column_from_left = vpc.x - (static_cast<fp>(v.pixel_grid_columns) / 2.0);
+    // observation: round()-ing vpcs snaps them to the correct pixel (hopefully)
+
+    fp row_from_top = v.pixel_grid_rows - vpc.y;
+    fp column_from_left = vpc.x;
     // printf("Half-a-row %lf\n", (static_cast<fp>(v.pixel_grid_rows) / 2.0));
     // printf("Half-a-col %lf\n", (static_cast<fp>(v.pixel_grid_columns)
     // / 2.0)); printf("ROW: %lf\t%lf\t%li\n", vpc.y, row_from_top,
@@ -59,42 +61,33 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f start, Vec2f end)
     {
         return midpoint_algorithm(end, start);
     }
-    // end.x >= start.x or we have a bad FP non-value
 
-    // it is a lambda because the division may be undefined
-    auto slope = [start, end]()
+    // end.x >= start.x guarenteed
+
+    printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", start.x, start.y,
+           end.x, end.y);
+
+    auto implicit_line = [start, end](fp x, fp y) -> fp
     {
-        return (end.y - start.y) / (end.x - start.x);
+        return (start.y - end.y) * x + (end.x - start.x) * y + start.x * end.y -
+               start.y * end.x;
     };
 
-    auto interpolate = [start, end, slope](fp x)
-    {
-        const fp a = slope();
-        fp y = start.y;
-        while (x++ <= end.x)
-        {
-            y += a;
-        }
-        return y;
-    };
-
+    // midpoint algorithm, Page 165
     std::vector<Vec2f> out {};
-
-    if (end.x > start.x)
+    fp y = start.y;
+    fp d = implicit_line(start.x + 1, start.y + 0.5);
+    for (int i = 0; start.x + i <= end.x; i++)
     {
-        // Classical Case: the line is gently going up
-        // TODO kinda dangerous FP loop?
-        for (fp px = start.x; px <= end.x; px++)
+        out.push_back({ start.x + i, y });
+        if (d < 0)
         {
-            out.push_back({ px, interpolate(px) });
+            y++;
+            d += (end.x - start.x) + (start.y - end.y);
         }
-    }
-    else if (end.x == start.x)
-    {
-        // Line is perfectly verical
-        for (fp py = start.y; py <= start.y; py++)
+        else
         {
-            out.push_back({ end.x, py });
+            d += (start.y - end.y);
         }
     }
     return out;
@@ -199,80 +192,79 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     const Vec2f trig_vpc1 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc1);
     const Vec2f trig_vpc2 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc2);
 
-    dprint("trig_vpc0", trig_vpc0);
-    dprint("trig_ndc0", f.trig_ndc0);
-    printf("fragment coordinate X%li Y%li!\n",
-           vpc2pc(trig_vpc0, v).column_from_left,
-           vpc2pc(trig_vpc0, v).row_from_top);
+    // dprint("trig_vpc0", trig_vpc0);
+    // dprint("trig_ndc0", f.trig_ndc0);
+    // printf("fragment coordinate X%li Y%li!\n",
+    //        vpc2pc(trig_vpc0, v).column_from_left,
+    //        vpc2pc(trig_vpc0, v).row_from_top);
 
-    // std::vector<m::Line2d>
-    // vpc_edge(f.edge.size());
-    // for (const auto& line : f.edge)
-    // {
-    //     vpc_edge.push_back({ dehomogenize_to_2d(v.t_viewport * line.start),
-    //                          dehomogenize_to_2d(v.t_viewport * line.end) });
-    // }
+    std::vector<m::Line2d> vpc_edge {};
+    for (const auto& line : f.edge)
+    {
+        vpc_edge.push_back({ dehomogenize_to_2d(v.t_viewport * line.start),
+                             dehomogenize_to_2d(v.t_viewport * line.end) });
+    }
 
-    // // Candidates are not-quite-fragments in viewport coordinates
-    // std::vector<Vec2f> vp_candidates {};
-    // for (const auto& vpc_line : vpc_edge)
-    // {
-    //     const std::vector<Vec2f> l =
-    //         midpoint_algorithm(vpc_line.start, vpc_line.end);
-    //     vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
-    // }
+    // Candidates are not-quite-fragments in viewport coordinates
+    std::vector<Vec2f> vp_candidates {};
+    for (const auto& vpc_line : vpc_edge)
+    {
+        const std::vector<Vec2f> l =
+            midpoint_algorithm(vpc_line.start, vpc_line.end);
+        vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
+    }
 
-    // Fragment::Attribute a0 {};
-    // Fragment::Attribute a1 {};
-    // Fragment::Attribute a2 {};
+    Fragment::Attribute a0 {};
+    Fragment::Attribute a1 {};
+    Fragment::Attribute a2 {};
 
-    // auto ndc2depth = [](fp x) -> fp
-    // {
-    //     return (x + 1) / 2.0;
-    // };
-
-    // a0.ceng477_color = { static_cast<fp>(f.mother.v0.ceng477_color.r),
-    //                      static_cast<fp>(f.mother.v0.ceng477_color.g),
-    //                      static_cast<fp>(f.mother.v0.ceng477_color.b) };
-    // a1.ceng477_color = { static_cast<fp>(f.mother.v1.ceng477_color.r),
-    //                      static_cast<fp>(f.mother.v1.ceng477_color.g),
-    //                      static_cast<fp>(f.mother.v1.ceng477_color.b) };
-    // a2.ceng477_color = { static_cast<fp>(f.mother.v2.ceng477_color.r),
-    //                      static_cast<fp>(f.mother.v2.ceng477_color.g),
-    //                      static_cast<fp>(f.mother.v2.ceng477_color.b) };
-    // a0.depth = { 0, 0, ndc2depth(f.trig_ndc0.z) };
-    // a1.depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
-    // a2.depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
-
-    // auto noperspective = [&](Vec2f vpp, m::Vec3f c0, m::Vec3f c1,
-    //                          m::Vec3f c2) -> m::Vec3f
-    // {
-    //     // perform barycentric interpolation for each component of generic
-    //     // attribute (currently x,y,z)
-    //     const Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
-    //     const Vec3f axs = { c0.x, c1.x, c2.x };
-    //     const Vec3f ays = { c0.y, c1.y, c2.y };
-    //     const Vec3f azs = { c0.z, c1.z, c2.z };
-    //     return { dot(b, axs), dot(b, ays), dot(b, azs) };
-    // };
-
-    // std::vector<Fragment> frag {};
-    // for (auto vpp : vp_candidates)
-    // {
-    //     frag.push_back({
-    //         vpc2pc(vpp, v),
-    //         {noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
-    //                   a2.ceng477_color),
-    //                   noperspective(vpp, a0.depth, a1.depth, a2.depth)}
-    //     });
-    // }
-
-    m::Vec3f red { 255, 0, 0 };
-    std::vector<Fragment> frag {
-        {vpc2pc(trig_vpc0, v), { red, red }},
- // { vpc2pc(trig_vpc1, v), { red, red }},
-  // { vpc2pc(trig_vpc2, v), { red, red }},
+    auto ndc2depth = [](fp x) -> fp
+    {
+        return (x + 1) / 2.0;
     };
+
+    a0.ceng477_color = { static_cast<fp>(f.mother.v0.ceng477_color.r),
+                         static_cast<fp>(f.mother.v0.ceng477_color.g),
+                         static_cast<fp>(f.mother.v0.ceng477_color.b) };
+    a1.ceng477_color = { static_cast<fp>(f.mother.v1.ceng477_color.r),
+                         static_cast<fp>(f.mother.v1.ceng477_color.g),
+                         static_cast<fp>(f.mother.v1.ceng477_color.b) };
+    a2.ceng477_color = { static_cast<fp>(f.mother.v2.ceng477_color.r),
+                         static_cast<fp>(f.mother.v2.ceng477_color.g),
+                         static_cast<fp>(f.mother.v2.ceng477_color.b) };
+    a0.depth = { 0, 0, ndc2depth(f.trig_ndc0.z) };
+    a1.depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
+    a2.depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
+
+    auto noperspective = [&](Vec2f vpp, m::Vec3f c0, m::Vec3f c1,
+                             m::Vec3f c2) -> m::Vec3f
+    {
+        // perform barycentric interpolation for each component of generic
+        // attribute (currently x,y,z)
+        const Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
+        const Vec3f xs = { c0.x, c1.x, c2.x };
+        const Vec3f ys = { c0.y, c1.y, c2.y };
+        const Vec3f zs = { c0.z, c1.z, c2.z };
+        return { dot(b, xs), dot(b, ys), dot(b, zs) };
+    };
+
+    std::vector<Fragment> frag {};
+    for (auto vpp : vp_candidates)
+    {
+        frag.push_back({
+            vpc2pc(vpp, v),
+            {noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+                      a2.ceng477_color),
+                      noperspective(vpp, a0.depth, a1.depth, a2.depth)}
+        });
+    }
+
+    // m::Vec3f red { 255, 0, 0 };
+    // std::vector<Fragment> frag {
+    //     {vpc2pc(trig_vpc0,  v), { red, red }},
+    //     { vpc2pc(trig_vpc1, v), { red, red }},
+    //     { vpc2pc(trig_vpc2, v), { red, red }},
+    // };
 
     return { f.mother, frag };
 }
