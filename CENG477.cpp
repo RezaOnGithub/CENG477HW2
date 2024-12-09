@@ -270,85 +270,85 @@ Scene::Scene(const char *xmlPath)
 	}
 }
 
-/*
-	Initializes image with background color
-*/
-void Scene::initializeImage(Camera *camera)
-{
-	if (this->image.empty())
-	{
-		for (int i = 0; i < camera->horRes; i++)
-		{
-			vector<Color> rowOfColors;
+// /*
+// 	Initializes image with background color
+// */
+// void Scene::initializeImage(Camera *camera)
+// {
+// 	if (this->image.empty())
+// 	{
+// 		for (int i = 0; i < camera->horRes; i++)
+// 		{
+// 			vector<Color> rowOfColors;
 
-			for (int j = 0; j < camera->verRes; j++)
-			{
-				rowOfColors.push_back(this->backgroundColor);
-			}
+// 			for (int j = 0; j < camera->verRes; j++)
+// 			{
+// 				rowOfColors.push_back(this->backgroundColor);
+// 			}
 
-			this->image.push_back(rowOfColors);
-		}
-	}
-	else
-	{
-		for (int i = 0; i < camera->horRes; i++)
-		{
-			for (int j = 0; j < camera->verRes; j++)
-			{
-				this->image[i][j].r = this->backgroundColor.r;
-				this->image[i][j].g = this->backgroundColor.g;
-				this->image[i][j].b = this->backgroundColor.b;
-			}
-		}
-	}
-}
+// 			this->image.push_back(rowOfColors);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		for (int i = 0; i < camera->horRes; i++)
+// 		{
+// 			for (int j = 0; j < camera->verRes; j++)
+// 			{
+// 				this->image[i][j].r = this->backgroundColor.r;
+// 				this->image[i][j].g = this->backgroundColor.g;
+// 				this->image[i][j].b = this->backgroundColor.b;
+// 			}
+// 		}
+// 	}
+// }
 
-/*
-	If given value is less than 0, converts value to 0.
-	If given value is more than 255, converts value to 255.
-	Otherwise returns value itself.
-*/
-int Scene::makeBetweenZeroAnd255(double value)
-{
-	if (value >= 255.0)
-		return 255;
-	if (value <= 0.0)
-		return 0;
-	return (int)(value);
-}
+// /*
+// 	If given value is less than 0, converts value to 0.
+// 	If given value is more than 255, converts value to 255.
+// 	Otherwise returns value itself.
+// */
+// int Scene::makeBetweenZeroAnd255(double value)
+// {
+// 	if (value >= 255.0)
+// 		return 255;
+// 	if (value <= 0.0)
+// 		return 0;
+// 	return (int)(value);
+// }
 
 
-/*
-	Writes contents of image (Color**) into a PPM file.
-*/
-void Scene::writeImageToPPMFile(Camera *camera)
-{
-	ofstream fout;
+// /*
+// 	Writes contents of image (Color**) into a PPM file.
+// */
+// void Scene::writeImageToPPMFile(Camera *camera)
+// {
+// 	ofstream fout;
 
-	fout.open(camera->outputFilename.c_str());
+// 	fout.open(camera->outputFilename.c_str());
 
-	fout << "P3" << endl;
-	fout << "# " << camera->outputFilename << endl;
-	fout << camera->horRes << " " << camera->verRes << endl;
-	fout << "255" << endl;
+// 	fout << "P3" << endl;
+// 	fout << "# " << camera->outputFilename << endl;
+// 	fout << camera->horRes << " " << camera->verRes << endl;
+// 	fout << "255" << endl;
 
-	for (int j = camera->verRes - 1; j >= 0; j--)
-	{
-		for (int i = 0; i < camera->horRes; i++)
-		{
-			fout << makeBetweenZeroAnd255(this->image[i][j].r) << " "
-				 << makeBetweenZeroAnd255(this->image[i][j].g) << " "
-				 << makeBetweenZeroAnd255(this->image[i][j].b) << " ";
-		}
-		fout << endl;
-	}
-	fout.close();
-}
+// 	for (int j = camera->verRes - 1; j >= 0; j--)
+// 	{
+// 		for (int i = 0; i < camera->horRes; i++)
+// 		{
+// 			fout << makeBetweenZeroAnd255(this->image[i][j].r) << " "
+// 				 << makeBetweenZeroAnd255(this->image[i][j].g) << " "
+// 				 << makeBetweenZeroAnd255(this->image[i][j].b) << " ";
+// 		}
+// 		fout << endl;
+// 	}
+// 	fout.close();
+// }
 
-void Scene::forwardRenderingPipeline(Camera *camera)
-{
-	// TODO: Implement this function
-}
+// void Scene::forwardRenderingPipeline(Camera *camera)
+// {
+// 	// TODO: Implement this function
+// }
 
 };
 //NOLINTEND

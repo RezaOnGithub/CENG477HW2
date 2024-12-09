@@ -520,4 +520,14 @@ Matrix4 homorotate(const fp ccw_angle, const Ray& axis)
            step4_desired_rotation * step3_axis_to_z * step2_axis_to_zx *
            step1_translate_away_from_origin;
 }
+
+Matrix4 homoscale(fp sx, fp sy, fp sz)
+{
+    return Matrix4::from_rows({
+        {sx, 0,  0,  0},
+        { 0, sy, 0,  0},
+        { 0, 0,  sz, 0},
+        { 0, 0,  0,  1}
+    });
+}
 };   // namespace m

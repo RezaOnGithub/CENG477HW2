@@ -40,8 +40,10 @@ add_executable(rasterizer
         World.cpp
         Renderer.cpp
 )
-add_executable(qnd
-        main_quickndirty.cpp
+add_executable(quickrizer
+        main_quickrizer.cpp
+        tinyxml2.cpp
+        CENG477.cpp
         Base.cpp
         World.cpp
         Renderer.cpp

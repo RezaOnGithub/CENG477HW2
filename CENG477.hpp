@@ -125,9 +125,9 @@ public:
 
     Scene(const char *xmlPath);
 
-    void initializeImage(Camera *camera);
-    void forwardRenderingPipeline(Camera *camera);
-    int makeBetweenZeroAnd255(double value);
-    void writeImageToPPMFile(Camera *camera);
+    // void initializeImage(Camera *camera);
+    // void forwardRenderingPipeline(Camera *camera);
+    // int makeBetweenZeroAnd255(double value);
+    // void writeImageToPPMFile(Camera *camera);
 };
 }

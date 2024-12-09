@@ -2,9 +2,13 @@
 #include "Renderer.hpp"
 #include "World.hpp"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
+
 
 void write_image(const char* filename, unsigned char* data, int width,
                  int height);
@@ -38,7 +42,7 @@ int main(int argc, char** argv)
                 data[base_index + 2] = img[i][j].b;
             }
         }
-        std::string name = v.filename;
+        std::string name = v.filename.substr(0, v.filename.size() - 2);
         write_image(name.c_str(), data, v.pixel_grid_columns,
                     v.pixel_grid_rows);
     }
@@ -48,43 +52,11 @@ int main(int argc, char** argv)
 
 // NOLINTBEGIN
 //  Code copied straight from raytracer
+
 void write_image(const char* filename, unsigned char* data, int width,
                  int height)
 {
-    FILE* outfile;
-
-    if ((outfile = fopen(filename, "w")) == NULL)
-    {
-        throw std::runtime_error(
-            "Error: The ppm file cannot be opened for writing.");
-    }
-
-    (void)fprintf(outfile, "P3\n%d %d\n255\n", width, height);
-
-    unsigned char color;
-    for (size_t j = 0, idx = 0; j < height; ++j)
-    {
-        for (size_t i = 0; i < width; ++i)
-        {
-            for (size_t c = 0; c < 3; ++c, ++idx)
-            {
-                color = data[idx];
-
-                if (i == width - 1 && c == 2)
-                {
-                    (void)fprintf(outfile, "%d", color);
-                }
-                else
-                {
-                    (void)fprintf(outfile, "%d ", color);
-                }
-            }
-        }
-
-        (void)fprintf(outfile, "\n");
-    }
-
-    (void)fclose(outfile);
+    stbi_write_png(filename, width, height, 3, data, width * 3);
 }
 
 // NOLINTEND

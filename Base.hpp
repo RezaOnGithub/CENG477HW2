@@ -45,7 +45,8 @@ struct IndexPair
 
 Vec3f normalize(const Vec3f& a);
 Matrix4 homotranslate(const Vec3f& additive);
-Matrix4 homorotate(double ccw_angle, const Ray& axis);
+Matrix4 homorotate(fp ccw_angle, const Ray& axis);
+Matrix4 homoscale(fp sx, fp sy, fp sz);
 Clip clip_aa_inner(const Vec3f& n, const HomoLine& l,
                    fp epsilon = ceng_epsilon);
 Vec3f barycentric(const Vec2f& a, const Vec2f& b, const Vec2f& c,
