@@ -21,8 +21,8 @@ constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
 {
     // observation: round()-ing vpcs snaps them to the correct pixel (hopefully)
 
-    fp row_from_top = v.pixel_grid_rows - vpc.y;
-    fp column_from_left = vpc.x;
+    fp row_from_top = vpc.x;
+    fp column_from_left = v.pixel_grid_rows - vpc.y;
     // printf("Half-a-row %lf\n", (static_cast<fp>(v.pixel_grid_rows) / 2.0));
     // printf("Half-a-col %lf\n", (static_cast<fp>(v.pixel_grid_columns)
     // / 2.0)); printf("ROW: %lf\t%lf\t%li\n", vpc.y, row_from_top,
@@ -277,6 +277,7 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
         v.pixel_grid_rows,
         std::vector<Pixel>(v.pixel_grid_columns, v.bg_color));
 
+    std::vector<std::vector<Fragment>> debug_ls {};
     // rasterize every triangle in the scene
     for (size_t i = 0; i < w.face_count(); i++)
     {
@@ -286,12 +287,15 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
         const auto& s3 = step3_device(s2, v);
         const auto& s4 = step4_sutherland_hodgman(s3);
         const auto& s5 = step5_rasterize(s4, v);
+        debug_ls.push_back(s5.out);
         fragments.insert(fragments.end(), s5.out.begin(), s5.out.end());
     }
 
     printf("resultant fragment count %lu\n", fragments.size());
 
     // turn surviving fragments into pixels
+    std::vector<long> seen_x {};
+    std::vector<long> seen_y {};
     for (const auto& d : fragments)
     {
         auto color = [](const m::Vec3f& c) -> m::Pixel
@@ -303,6 +307,9 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
                      static_cast<unsigned char>(
                          c.z > 255 ? 255 : (c.z < 0 ? 0 : c.z)) };
         };
+
+        // FIXME comment out these sanity checks at some point
+
         if (d.pc.row_from_top < 0 || d.pc.column_from_left < 0 ||
             d.pc.row_from_top >= v.pixel_grid_rows ||
             d.pc.column_from_left >= v.pixel_grid_columns)
@@ -311,6 +318,18 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
                    d.pc.column_from_left, d.pc.row_from_top);
             continue;
         }
+        if (std::find(seen_x.begin(), seen_x.end(), d.pc.column_from_left) !=
+            seen_x.end())
+        {
+            if (std::find(seen_y.begin(), seen_y.end(), d.pc.row_from_top) !=
+                seen_y.end())
+            {
+                printf("OVERDRAW! At %lu %lu\n", d.pc.column_from_left,
+                       d.pc.row_from_top);
+            }
+        }
+        seen_x.push_back(d.pc.column_from_left);
+        seen_y.push_back(d.pc.row_from_top);
         pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
             color(d.a.ceng477_color);
     }
