@@ -9,6 +9,7 @@
 #include <optional>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 using namespace m;
 using namespace renderer;
@@ -53,31 +54,38 @@ constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
 //     return out;
 // }
 
-std::vector<Vec2f> midpoint_algorithm(Vec2f start, Vec2f end)
+std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 {
-    assert(std::isfinite(start.x) and std::isfinite(end.x) and
-           std::isfinite(start.y) and std::isfinite(end.y));
-    if (start.x > end.x)
+    assert(std::isfinite(a.x) and std::isfinite(b.x) and
+        std::isfinite(a.y) and std::isfinite(b.y));
+
+    printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", a.x, a.y,
+           b.x, b.y);
+
+    Vec2f start, end;
+    if (a.x > b.x)
     {
-        return midpoint_algorithm(end, start);
+        end = a;
+        start = b;
+    } else
+    {
+        start = a;
+        end = b;
     }
 
     // end.x >= start.x guarenteed
 
-    printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", start.x, start.y,
-           end.x, end.y);
-
-    auto implicit_line = [start, end](fp x, fp y) -> fp
+    auto implicit_line = [start, end](const fp x, const fp y) -> fp
     {
         return (start.y - end.y) * x + (end.x - start.x) * y + start.x * end.y -
                start.y * end.x;
     };
 
     // midpoint algorithm, Page 165
-    std::vector<Vec2f> out {};
+    std::vector<Vec2f> out{};
     fp y = start.y;
     fp d = implicit_line(start.x + 1, start.y + 0.5);
-    for (int i = 0; start.x + i <= end.x; i++)
+    for (int i = 0; start.x + i <= round(end.x) + 1; i++)
     {
         out.push_back({ start.x + i, y });
         if (d < 0)
@@ -92,11 +100,6 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f start, Vec2f end)
     }
     return out;
 }
-
-// constexpr FragmentAttributeFinal interpolate_attributes()
-// {
-
-// }
 
 /*****************************************************************************/
 // step-by-step of our forward rendering pipeline
@@ -130,48 +133,48 @@ S2Face step2_bfc(const S1Face& f, const ViewConfig& v)
 
 S3Face step3_device(const S2Face& f, const ViewConfig& v)
 {
-    std::vector<Vec4f> ndc { v.t_projection * f.cc0, v.t_projection * f.cc1,
-                             v.t_projection * f.cc2 };
+    const std::vector ndc{ v.t_projection * f.cc0, v.t_projection * f.cc1,
+                           v.t_projection * f.cc2 };
     return { f.mother, ndc[0], ndc[1], ndc[2] };
 }
 
 S4Polygon step4_sutherland_hodgman(const S3Face& f)
 {
     using m::Clip;
-    const std::vector<Vec3f> plane_normals {
-        {0,   0,  1 },
-        { 0,  0,  -1},
-        { 0,  1,  0 },
-        { 0,  -1, 0 },
-        { 1,  0,  0 },
-        { -1, 0,  0 }
+    const std::vector<Vec3f> plane_normals{
+        { 0, 0, 1 },
+        { 0, 0, -1 },
+        { 0, 1, 0 },
+        { 0, -1, 0 },
+        { 1, 0, 0 },
+        { -1, 0, 0 }
     };
-    std::vector<m::HomoLine> ndc {
-        {f.ndc0,  f.ndc1},
-        { f.ndc1, f.ndc2},
-        { f.ndc2, f.ndc0}
+    std::vector<HomoLine> ndc{
+        { f.ndc0, f.ndc1 },
+        { f.ndc1, f.ndc2 },
+        { f.ndc2, f.ndc0 }
     };
-    std::vector<m::HomoLine> new_ndc {};
+    std::vector<HomoLine> new_ndc{};
 
     for (auto normal : plane_normals)
     {
-        for (auto line : ndc)
+        for (auto [start, end] : ndc)
         {
-            auto clip = clip_aa_inner(normal, { line.start, line.end });
+            auto clip = clip_aa_inner(normal, { start, end });
             // TODO does it even make a difference if I used clip's output?
             switch (clip.t)
             {
-            case m::Clip::ClipType::NonExistant :
+            case Clip::ClipType::NonExistant:
                 // Hope for the best!
                 break;
-            case m::Clip::ClipType::CutHead :
-                new_ndc.emplace_back(clip.l.start, line.end);
+            case Clip::ClipType::CutHead:
+                new_ndc.emplace_back(clip.l.start, end);
                 break;
-            case m::Clip::ClipType::CutTail :
-                new_ndc.emplace_back(line.start, clip.l.end);
+            case Clip::ClipType::CutTail:
+                new_ndc.emplace_back(start, clip.l.end);
                 break;
-            case m::Clip::ClipType::NoCut :
-                new_ndc.emplace_back(line.start, line.end);
+            case Clip::ClipType::NoCut:
+                new_ndc.emplace_back(start, end);
                 break;
             }
         }
@@ -184,13 +187,14 @@ S4Polygon step4_sutherland_hodgman(const S3Face& f)
 
 S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
 {
-    auto dehomogenize_to_2d = [](Vec4f v) -> Vec2f
+    auto tvp_and_dehomogenize_to_2d = [v](const Vec4f& x) -> Vec2f
     {
-        return { v.dehomogenize().x, v.dehomogenize().y };
+        const Vec4f& transformed = v.t_viewport * x;
+        return { transformed.dehomogenize().x, transformed.dehomogenize().y };
     };
-    const Vec2f trig_vpc0 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc0);
-    const Vec2f trig_vpc1 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc1);
-    const Vec2f trig_vpc2 = dehomogenize_to_2d(v.t_viewport * f.trig_ndc2);
+    const Vec2f trig_vpc0 = tvp_and_dehomogenize_to_2d(f.trig_ndc0);
+    const Vec2f trig_vpc1 = tvp_and_dehomogenize_to_2d(f.trig_ndc1);
+    const Vec2f trig_vpc2 = tvp_and_dehomogenize_to_2d(f.trig_ndc2);
 
     // dprint("trig_vpc0", trig_vpc0);
     // dprint("trig_ndc0", f.trig_ndc0);
@@ -198,27 +202,27 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     //        vpc2pc(trig_vpc0, v).column_from_left,
     //        vpc2pc(trig_vpc0, v).row_from_top);
 
-    std::vector<m::Line2d> vpc_edge {};
-    for (const auto& line : f.edge)
+    std::vector<Line2d> vpc_edge{};
+    for (const auto& [start, end] : f.edge)
     {
-        vpc_edge.push_back({ dehomogenize_to_2d(v.t_viewport * line.start),
-                             dehomogenize_to_2d(v.t_viewport * line.end) });
+        vpc_edge.push_back({ tvp_and_dehomogenize_to_2d(start),
+                             tvp_and_dehomogenize_to_2d(end) });
     }
 
     // Candidates are not-quite-fragments in viewport coordinates
-    std::vector<Vec2f> vp_candidates {};
-    for (const auto& vpc_line : vpc_edge)
+    std::vector<Vec2f> vp_candidates{};
+    for (const auto& [start, end] : vpc_edge)
     {
         const std::vector<Vec2f> l =
-            midpoint_algorithm(vpc_line.start, vpc_line.end);
+            midpoint_algorithm(start, end);
         vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
     }
 
-    Fragment::Attribute a0 {};
-    Fragment::Attribute a1 {};
-    Fragment::Attribute a2 {};
+    Fragment::Attribute a0{};
+    Fragment::Attribute a1{};
+    Fragment::Attribute a2{};
 
-    auto ndc2depth = [](fp x) -> fp
+    auto ndc2depth = [](const fp x) -> fp
     {
         return (x + 1) / 2.0;
     };
@@ -236,8 +240,8 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     a1.depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
     a2.depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
 
-    auto noperspective = [&](Vec2f vpp, m::Vec3f c0, m::Vec3f c1,
-                             m::Vec3f c2) -> m::Vec3f
+    auto noperspective = [&](const Vec2f vpp, const Vec3f& c0, const Vec3f& c1,
+                             const Vec3f& c2) -> Vec3f
     {
         // perform barycentric interpolation for each component of generic
         // attribute (currently x,y,z)
@@ -248,14 +252,20 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
         return { dot(b, xs), dot(b, ys), dot(b, zs) };
     };
 
-    std::vector<Fragment> frag {};
+    std::vector<Fragment> frag{};
     for (auto vpp : vp_candidates)
     {
+        Vec3f xxx = noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+                            a2.ceng477_color);
+        if (xxx.x <= 0 and xxx.y >= 255 and xxx.z >= 255)
+        {
+            printf("Caught something!\n");
+        }
         frag.push_back({
             vpc2pc(vpp, v),
-            {noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
-                      a2.ceng477_color),
-                      noperspective(vpp, a0.depth, a1.depth, a2.depth)}
+            { noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+                            a2.ceng477_color),
+              noperspective(vpp, a0.depth, a1.depth, a2.depth) }
         });
     }
 
@@ -272,12 +282,12 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
 // Rasterize every triangle, perform depth test, write to an output buffer
 std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
 {
-    std::vector<Fragment> fragments {};
-    std::vector<std::vector<Pixel>> pbuffer(
+    std::vector<Fragment> fragments{};
+    std::vector pbuffer(
         v.pixel_grid_rows,
-        std::vector<Pixel>(v.pixel_grid_columns, v.bg_color));
+        std::vector(v.pixel_grid_columns, v.bg_color));
 
-    std::vector<std::vector<Fragment>> debug_ls {};
+    std::vector<std::vector<Fragment>> debug_ls{};
     // rasterize every triangle in the scene
     for (size_t i = 0; i < w.face_count(); i++)
     {
@@ -294,18 +304,18 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
     printf("resultant fragment count %lu\n", fragments.size());
 
     // turn surviving fragments into pixels
-    std::vector<long> seen_x {};
-    std::vector<long> seen_y {};
+    std::vector<long> seen_x{};
+    std::vector<long> seen_y{};
     for (const auto& d : fragments)
     {
-        auto color = [](const m::Vec3f& c) -> m::Pixel
+        auto color = [](const Vec3f& c) -> Pixel
         {
             return { static_cast<unsigned char>(
-                         c.x > 255 ? 255 : (c.x < 0 ? 0 : c.x)),
+                         c.x > 255 ? 255 : c.x < 0 ? 0 : c.x),
                      static_cast<unsigned char>(
-                         c.y > 255 ? 255 : (c.y < 0 ? 0 : c.y)),
+                         c.y > 255 ? 255 : c.y < 0 ? 0 : c.y),
                      static_cast<unsigned char>(
-                         c.z > 255 ? 255 : (c.z < 0 ? 0 : c.z)) };
+                         c.z > 255 ? 255 : c.z < 0 ? 0 : c.z) };
         };
 
         // FIXME comment out these sanity checks at some point
@@ -318,14 +328,15 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
                    d.pc.column_from_left, d.pc.row_from_top);
             continue;
         }
-        if (std::find(seen_x.begin(), seen_x.end(), d.pc.column_from_left) !=
+        if (std::ranges::find(seen_x, d.pc.column_from_left) !=
             seen_x.end())
         {
-            if (std::find(seen_y.begin(), seen_y.end(), d.pc.row_from_top) !=
+            if (std::ranges::find(seen_y, d.pc.row_from_top) !=
                 seen_y.end())
             {
-                printf("OVERDRAW! At %lu %lu\n", d.pc.column_from_left,
-                       d.pc.row_from_top);
+                // FIXME yeah yeah overdraw
+                // printf("OVERDRAW! At %lu %lu\n", d.pc.column_from_left,
+                // d.pc.row_from_top);
             }
         }
         seen_x.push_back(d.pc.column_from_left);

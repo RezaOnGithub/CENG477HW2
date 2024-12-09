@@ -324,8 +324,8 @@ Vec3f barycentric(const Vec2f& a, const Vec2f& b, const Vec2f& c,
     })
                               .invert();
 
-    const Vec2f bc = solve * p;
-    return { 1 - bc.x - bc.y, bc.x, bc.y };
+    const auto [beta, gamma] = solve * Vec2f({p.x-a.x, p.y-a.y});
+    return { 1 - beta - gamma, beta, gamma };
 }
 
 // TODO I have tried my best not to dehomogenize and hope for correctness

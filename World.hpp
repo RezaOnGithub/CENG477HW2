@@ -25,7 +25,7 @@ struct ViewFrustum
 m::Matrix4 viewport_transformation(long pixel_grid_rows,
                                    long pixel_grid_columns);
 m::Matrix4 orthographic_projection(ViewFrustum f);
-m::Matrix4 perspective_projection(ViewFrustum vf);
+m::Matrix4 perspective_projection(const ViewFrustum& vf);
 m::Matrix4 camera_transformation(m::Vec3f cam_o, m::Vec3f gaze, m::Vec3f up);
 
 class ViewConfig
