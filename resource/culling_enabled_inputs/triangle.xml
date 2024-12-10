@@ -1,0 +1,45 @@
+<Scene>
+	<BackgroundColor>255 255 255</BackgroundColor>
+	<Culling>enabled</Culling>
+	<Cameras>
+		<Camera id="1" type="perspective">
+			<Position>0 0 -2</Position>
+			<Gaze>0 0 1</Gaze>
+			<Up>0 1 0</Up>
+			<ImagePlane>-1 1 -1 1 2 1000 700 700</ImagePlane>
+			<OutputName>triangle.ppm</OutputName>
+		</Camera>
+	</Cameras>
+
+    <Translations>
+	</Translations>
+
+	<Scalings>
+	</Scalings>
+
+	<Rotations>
+	</Rotations>
+
+	<Vertices>
+		<Vertex id="1" position="0.3 0.3 0.0" color="255 0 0" />
+		<Vertex id="2" position="0.4 0.3 0.0" color="0 255 0" />
+		<Vertex id="3" position="0.3 0.4 0.0" color="0 0 255" />
+		<Vertex id="4" position="0.9 0.0 0.0" color="255 0 0" />
+		<Vertex id="5" position="-0.1 0.5 0.0" color="255 0 0" />
+		<Vertex id="6" position="0.5 -0.5 0.0" color="0 255 0" />
+		<Vertex id="7" position="0.5 0.5 0.0" color="0 0 255" />
+	</Vertices>
+
+	<Meshes>
+
+		<Mesh id="1" type="wireframe">
+            <Transformations>
+            </Transformations>
+			<Faces>
+                3 2 1
+                5 6 7
+			</Faces>
+		</Mesh>
+	</Meshes>
+
+</Scene>

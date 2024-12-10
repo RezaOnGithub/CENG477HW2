@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/quickrizer",
             "args": [
-                "${workspaceFolder}/resource/culling_disabled_inputs/triangle.xml"
+                "${workspaceFolder}/resource/culling_enabled_inputs/debug.xml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",

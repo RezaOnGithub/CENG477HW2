@@ -34,10 +34,10 @@ m::Matrix4 viewport_transformation(long pixel_grid_rows,
                                    long pixel_grid_columns)
 {
     return m::Matrix4::from_rows({
-        {pixel_grid_columns / 2.0, 0,                     0, (pixel_grid_columns - 1) / 2.0},
-        { 0,                       pixel_grid_rows / 2.0, 0, (pixel_grid_rows - 1) / 2.0   },
-        { 0,                       0,                     1, 0                             },
-        { 0,                       0,                     0, 1                             }
+        { pixel_grid_columns / 2.0, 0,                     0, (pixel_grid_columns - 1) / 2.0 },
+        { 0,                        pixel_grid_rows / 2.0, 0, (pixel_grid_rows - 1) / 2.0    },
+        { 0,                        0,                     1, 0                              },
+        { 0,                        0,                     0, 1                              }
     });
 }
 
@@ -61,10 +61,10 @@ m::Matrix4 orthographic_projection(ViewFrustum f)
     const fp height = abs(f.top - f.bottom);
     const fp distance = abs(f.near - f.far);
     return Matrix4::from_rows({
-        {2.0 / width, 0,            0,              abs(f.right + f.left) / width },
-        { 0,          2.0 / height, 0,              abs(f.top + f.bottom) / height},
-        { 0,          0,            2.0 / distance, abs(f.near + f.far) / distance},
-        { 0,          0,            0,              1                             }
+        { 2.0 / width, 0,            0,              abs(f.right + f.left) / width  },
+        { 0,           2.0 / height, 0,              abs(f.top + f.bottom) / height },
+        { 0,           0,            2.0 / distance, abs(f.near + f.far) / distance },
+        { 0,           0,            0,              1                              }
     });
 
     // const fp near = -1 * f.near;
@@ -89,10 +89,10 @@ m::Matrix4 perspective_projection(const ViewFrustum& vf)
     const fp f = -abs(vf.far);
     const Matrix4 orthographic = orthographic_projection(vf);
     const Matrix4 perspective = Matrix4::from_rows({
-        {n,  0, 0,     0     },
-        { 0, n, 0,     0     },
-        { 0, 0, n + f, -f * n},
-        { 0, 0, 1,     0     }
+        { n, 0, 0,     0      },
+        { 0, n, 0,     0      },
+        { 0, 0, n + f, -f * n },
+        { 0, 0, 1,     0      }
     });
     return orthographic * perspective;
 }
@@ -132,8 +132,8 @@ ViewConfig sample_view(m::fp r)
     Vec3f cam_v { -10, -10, 0 };
     Vec3f cam_o { 10, 10, 0 };
     const Matrix4 rot = homorotate(r, {
-                                          {0,  0, 0},
-                                          { 0, 1, 0}
+                                          { 0, 0, 0 },
+                                          { 0, 1, 0 }
     });
     cam_o = (rot * cam_o.homopoint()).dehomogenize();
     cam_v = (rot * cam_v.homopoint()).dehomogenize();
@@ -151,9 +151,9 @@ World::World(m::Vec3f v0, m::Vec3f v1, m::Vec3f v2)
 {
     m::Pixel r { 255, 0, 0 };
     fs.push_back({
-        {v0,  { r }},
-        { v1, { r }},
-        { v2, { r }},
+        { v0, { r } },
+        { v1, { r } },
+        { v2, { r } },
         WorldFace::RenderMode::WIREFRAME,
     });
 }
@@ -264,8 +264,8 @@ World::World(const ceng::Scene& scene)
                     const auto tranformation = m::homorotate(
                         (r_deref.angle * std::numbers::pi) / 180.0,
                         {
-                            {0,           0,          0         },
-                            { r_deref.ux, r_deref.uy, r_deref.uz}
+                            { 0,          0,          0          },
+                            { r_deref.ux, r_deref.uy, r_deref.uz }
                     });
                     v0h = tranformation * v0h;
                     v1h = tranformation * v1h;
@@ -282,9 +282,9 @@ World::World(const ceng::Scene& scene)
                                              WorldFace::RenderMode::WIREFRAME :
                                              WorldFace::RenderMode::SOLID;
             scene_faces.push_back({
-                {v0h.dehomogenize(),  c0},
-                { v1h.dehomogenize(), c1},
-                { v2h.dehomogenize(), c2},
+                { v0h.dehomogenize(), c0 },
+                { v1h.dehomogenize(), c1 },
+                { v2h.dehomogenize(), c2 },
                 mode
             });
         }

@@ -146,18 +146,17 @@ S1Face step1_camera(const WorldFace& f, const ViewConfig& v)
 }
 
 S2Face step2_bfc(const S1Face& f, const ViewConfig& v)
-
 {
     // FIXME
-    // Vec4f normal =
-    //     v.t_camera * surface_normal(f.cc0.dehomogenize(),
-    //     f.cc1.dehomogenize(),
-    //                                 f.cc2.dehomogenize())
-    //                      .homovector();
-    // if (v.cull_backface and dot(v.gaze.homovector(), normal) >= 0)
-    // {
-    //     return { f.mother, true, f.cc0, f.cc1, f.cc2 };
-    // }
+    Vec4f normal =
+        v.t_camera * surface_normal(f.cc0.dehomogenize(), f.cc1.dehomogenize(),
+                                    f.cc2.dehomogenize())
+                         .homovector();
+    fp dot_product = dot(v.gaze.homovector(), normal);
+    if (v.cull_backface and dot_product >= 0)
+    {
+        return { f.mother, true, f.cc0, f.cc1, f.cc2 };
+    }
     return { f.mother, false, f.cc0, f.cc1, f.cc2 };
 }
 
@@ -338,6 +337,10 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
         const WorldFace& f = w.get_face(i);
         const auto& s1 = step1_camera(f, v);
         const auto& s2 = step2_bfc(s1, v);
+        if (s2.bfc_cullable)
+        {
+            continue;
+        }
         const auto& s3 = step3_device(s2, v);
         const auto& s4 = step4_sutherland_hodgman(s3);
         const auto& s5 = step5_rasterize(s4, v);
