@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <numbers>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -20,9 +21,8 @@ ViewConfig::ViewConfig(const char* name, long rows, long columns,
     bg_color(background_color),
     gaze(camera_gaze),
     t_viewport(viewport_transformation(rows, columns)),
-    t_projection(perspective_correct ?
-                     perspective_projection(f) :
-                     orthographic_projection(f)),
+    t_projection(perspective_correct ? perspective_projection(f) :
+                                       orthographic_projection(f)),
     t_camera(camera_transformation(camera_origin, camera_gaze, camera_up)),
     pixel_grid_rows(rows),
     pixel_grid_columns(columns),
@@ -34,10 +34,10 @@ m::Matrix4 viewport_transformation(long pixel_grid_rows,
                                    long pixel_grid_columns)
 {
     return m::Matrix4::from_rows({
-        { pixel_grid_columns / 2.0, 0, 0, (pixel_grid_columns - 1) / 2.0 },
-        { 0, pixel_grid_rows / 2.0, 0, (pixel_grid_rows - 1) / 2.0 },
-        { 0, 0, 1, 0 },
-        { 0, 0, 0, 1 }
+        {pixel_grid_columns / 2.0, 0,                     0, (pixel_grid_columns - 1) / 2.0},
+        { 0,                       pixel_grid_rows / 2.0, 0, (pixel_grid_rows - 1) / 2.0   },
+        { 0,                       0,                     1, 0                             },
+        { 0,                       0,                     0, 1                             }
     });
 }
 
@@ -80,7 +80,7 @@ m::Matrix4 orthographic_projection(ViewFrustum f)
     // });
 }
 
-m::Matrix4 perspective_projection(const ViewFrustum &vf)
+m::Matrix4 perspective_projection(const ViewFrustum& vf)
 {
     // do NOT trust the user in passing values correctly-signed
     using namespace m;
@@ -89,10 +89,10 @@ m::Matrix4 perspective_projection(const ViewFrustum &vf)
     const fp f = -abs(vf.far);
     const Matrix4 orthographic = orthographic_projection(vf);
     const Matrix4 perspective = Matrix4::from_rows({
-        { n, 0, 0, 0 },
-        { 0, n, 0, 0 },
-        { 0, 0, n + f, -f * n },
-        { 0, 0, 1, 0 }
+        {n,  0, 0,     0     },
+        { 0, n, 0,     0     },
+        { 0, 0, n + f, -f * n},
+        { 0, 0, 1,     0     }
     });
     return orthographic * perspective;
 }
@@ -110,7 +110,7 @@ std::vector<ViewConfig> extract_views(const ceng::Scene& s)
     result.reserve(s.cameras.size());
     for (auto* c : s.cameras)
     {
-        result.emplace_back(ViewConfig{
+        result.emplace_back(ViewConfig {
             c->outputFilename.c_str(),
             c->verRes,
             c->horRes,
@@ -129,18 +129,17 @@ std::vector<ViewConfig> extract_views(const ceng::Scene& s)
 ViewConfig sample_view(m::fp r)
 {
     using namespace m;
-    Vec3f cam_v{ -10, -10, 0 };
-    Vec3f cam_o{ 10, 10, 0 };
+    Vec3f cam_v { -10, -10, 0 };
+    Vec3f cam_o { 10, 10, 0 };
     const Matrix4 rot = homorotate(r, {
-                                       { 0, 0, 0 },
-                                       { 0, 1, 0 }
-                                   });
+                                          {0,  0, 0},
+                                          { 0, 1, 0}
+    });
     cam_o = (rot * cam_o.homopoint()).dehomogenize();
     cam_v = (rot * cam_v.homopoint()).dehomogenize();
-    const ViewFrustum vf{ 5, -5, 5, -5, 0.2, 10 };
+    const ViewFrustum vf { 5, -5, 5, -5, 0.2, 10 };
     return ViewConfig("sample_view.ppm", 800, 600, cam_o, cam_v, { 0, 1, 0 },
-                      vf,
-                      { 0, 0, 0 }, true, false);
+                      vf, { 0, 0, 0 }, true, false);
 }
 
 World sample_world()
@@ -150,11 +149,11 @@ World sample_world()
 
 World::World(m::Vec3f v0, m::Vec3f v1, m::Vec3f v2)
 {
-    m::Pixel r{ 255, 0, 0 };
+    m::Pixel r { 255, 0, 0 };
     fs.push_back({
-        { v0, { r } },
-        { v1, { r } },
-        { v2, { r } },
+        {v0,  { r }},
+        { v1, { r }},
+        { v2, { r }},
         WorldFace::RenderMode::WIREFRAME,
     });
 }
@@ -188,14 +187,14 @@ World::World(const ceng::Scene& scene)
             *(scene.colorsOfVertices[scene.vertices[id - 1]->colorId - 1]));
     };
 
-    std::vector<WorldFace> scene_faces{};
+    std::vector<WorldFace> scene_faces {};
     for (auto* m : scene.meshes)
     {
         for (size_t trigi = 0; trigi < m->numberOfTriangles; trigi++)
         {
             m::Vec4f v0h = vec3(m->triangles[trigi].v1).homopoint();
-            m::Vec4f v2h = vec3(m->triangles[trigi].v3).homopoint();
             m::Vec4f v1h = vec3(m->triangles[trigi].v2).homopoint();
+            m::Vec4f v2h = vec3(m->triangles[trigi].v3).homopoint();
             m::Pixel c0 = vec3_color(m->triangles[trigi].v1);
             m::Pixel c1 = vec3_color(m->triangles[trigi].v2);
             m::Pixel c2 = vec3_color(m->triangles[trigi].v3);
@@ -209,7 +208,7 @@ World::World(const ceng::Scene& scene)
                 const char trans_type = m->transformationTypes[transi];
                 switch (trans_type)
                 {
-                case 't': {
+                case 't' : {
                     const auto t = std::find_if(
                         scene.translations.begin(), scene.translations.end(),
                         [trans_id](ceng::Translation* e)
@@ -229,7 +228,7 @@ World::World(const ceng::Scene& scene)
                     v2h = tranformation * v2h;
                     break;
                 }
-                case 's': {
+                case 's' : {
                     const auto s = std::find_if(
                         scene.scalings.begin(), scene.scalings.end(),
                         [trans_id](ceng::Scaling* e)
@@ -249,7 +248,7 @@ World::World(const ceng::Scene& scene)
                     v2h = tranformation * v2h;
                     break;
                 }
-                case 'r': {
+                case 'r' : {
                     const auto r = std::find_if(
                         scene.rotations.begin(), scene.rotations.end(),
                         [trans_id](ceng::Rotation* e)
@@ -263,17 +262,17 @@ World::World(const ceng::Scene& scene)
                     }
                     const auto r_deref = **r;
                     const auto tranformation = m::homorotate(
-                        r_deref.angle,
+                        (r_deref.angle * std::numbers::pi) / 180.0,
                         {
-                            { 0, 0, 0 },
-                            { r_deref.ux, r_deref.uy, r_deref.uz }
-                        });
+                            {0,           0,          0         },
+                            { r_deref.ux, r_deref.uy, r_deref.uz}
+                    });
                     v0h = tranformation * v0h;
                     v1h = tranformation * v1h;
                     v2h = tranformation * v2h;
                     break;
                 }
-                default:
+                default :
                     // TODO should we crash?
                     throw std::runtime_error("Unknown transformation type!");
                 }
@@ -283,9 +282,9 @@ World::World(const ceng::Scene& scene)
                                              WorldFace::RenderMode::WIREFRAME :
                                              WorldFace::RenderMode::SOLID;
             scene_faces.push_back({
-                { v0h.dehomogenize(), c0 },
-                { v1h.dehomogenize(), c1 },
-                { v2h.dehomogenize(), c2 },
+                {v0h.dehomogenize(),  c0},
+                { v1h.dehomogenize(), c1},
+                { v2h.dehomogenize(), c2},
                 mode
             });
         }
