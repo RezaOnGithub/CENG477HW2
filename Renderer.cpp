@@ -58,7 +58,6 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 {
     assert(std::isfinite(a.x) && std::isfinite(b.x) && std::isfinite(a.y) &&
            std::isfinite(b.y));
-
     printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", a.x, a.y, b.x,
            b.y);
 
@@ -68,13 +67,12 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 
     fp dx = end.x - start.x;
     fp dy = end.y - start.y;
-
     std::vector<Vec2f> out;
 
     // Handle vertical lines explicitly
     if (dx == 0)
     {
-        fp step = (dy > 0) ? 1.0f : -1.0f;
+        fp step = (start.y <= end.y) ? 1.0f : -1.0f;
         for (fp y = start.y; (step > 0 ? y <= end.y : y >= end.y); y += step)
         {
             out.push_back({ start.x, y });
@@ -82,35 +80,46 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
         return out;
     }
 
-    // Determine if the slope is steep
+    // Determine if the line is steep
     bool steep = std::abs(dy) > std::abs(dx);
 
-    // Swap x and y if the line is steep
+    // Swap coordinates if the line is steep to simplify drawing
     if (steep)
     {
         std::swap(start.x, start.y);
         std::swap(end.x, end.y);
-        dx = end.x - start.x;
-        dy = end.y - start.y;
+        std::swap(dx, dy);
+    }
+
+    // Ensure we always draw from left to right
+    if (start.x > end.x)
+    {
+        std::swap(start, end);
+        dx = -dx;
+        dy = -dy;
     }
 
     // Determine the direction of increment for y
     fp y_step = (dy > 0) ? 1.0f : -1.0f;
 
+    // Initialize decision parameter
     fp d = 2 * std::abs(dy) - dx;
     fp y = start.y;
 
+    // Draw the line pixel by pixel
     for (fp x = start.x; x <= end.x; x += 1.0f)
     {
+        // Swap back coordinates for steep lines
         if (steep)
         {
-            out.push_back({ y, x });   // Swap back x and y for steep lines
+            out.push_back({ y, x });
         }
         else
         {
             out.push_back({ x, y });
         }
 
+        // Update decision parameter and y coordinate
         if (d > 0)
         {
             y += y_step;
