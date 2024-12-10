@@ -217,6 +217,12 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     const Vec2f trig_vpc1 = tvp_and_dehomogenize_to_2d(f.trig_ndc1);
     const Vec2f trig_vpc2 = tvp_and_dehomogenize_to_2d(f.trig_ndc2);
 
+    // TODO: eliminate degenerate cases
+    // if (cross(trig_vpc1 - trig_vpc0, trig_vpc2 - trig_vpc0) == 0)
+    // {
+    //     return { f.mother, {} };
+    // }
+
     // dprint("trig_vpc0", trig_vpc0);
     // dprint("trig_ndc0", f.trig_ndc0);
     // printf("fragment coordinate X%li Y%li!\n",
@@ -260,28 +266,42 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     a1.depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
     a2.depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
 
-    auto noperspective = [&](const Vec2f vpp, const Vec3f& c0, const Vec3f& c1,
-                             const Vec3f& c2) -> Vec3f
+    auto perspective_correct = [&](const Vec2f vpp, const Vec3f& c0,
+                                   const Vec3f& c1, const Vec3f& c2) -> Vec3f
     {
-        // perform barycentric interpolation for each component of generic
-        // attribute (currently x,y,z)
-        const Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
-        const Vec3f xs = { c0.x, c1.x, c2.x };
-        const Vec3f ys = { c0.y, c1.y, c2.y };
-        const Vec3f zs = { c0.z, c1.z, c2.z };
-        return { dot(b, xs), dot(b, ys), dot(b, zs) };
+        Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
+        b.x = std::max(0.F, std::min(1.F, static_cast<float>(b.x)));
+        b.y = std::max(0.F, std::min(1.F, static_cast<float>(b.y)));
+        b.z = std::max(0.F, std::min(1.F, static_cast<float>(b.z)));
+
+        const Vec3f w_reciprocal = { 1.0 / f.trig_ndc0.w, 1.0 / f.trig_ndc1.w,
+                                     1.0 / f.trig_ndc2.w };
+
+        const Vec3f c0_div_w = c0.scale(w_reciprocal.x);
+        const Vec3f c1_div_w = c1.scale(w_reciprocal.y);
+        const Vec3f c2_div_w = c2.scale(w_reciprocal.z);
+
+        // Perform component-wise barycentric interpolation
+        Vec3f interpolated = {
+            b.x * c0_div_w.x + b.y * c1_div_w.x + b.z * c2_div_w.x,
+            b.x * c0_div_w.y + b.y * c1_div_w.y + b.z * c2_div_w.y,
+            b.x * c0_div_w.z + b.y * c1_div_w.z + b.z * c2_div_w.z,
+        };
+
+        fp interpolated_w =
+            b.x * w_reciprocal.x + b.y * w_reciprocal.y + b.z * w_reciprocal.z;
+        return interpolated.scale(1.F / interpolated_w);
     };
 
     std::vector<Fragment> frag {};
     for (auto vpp : vp_candidates)
     {
-        Vec3f xxx = noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
-                                  a2.ceng477_color);
+        const Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
         frag.push_back({
             vpc2pc(vpp, v),
-            { noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+            { interpolate(b, a0.ceng477_color, a1.ceng477_color,
                       a2.ceng477_color),
-                      noperspective(vpp, a0.depth, a1.depth, a2.depth) }
+                      interpolate(b, a0.depth, a1.depth, a2.depth) }
         });
     }
 

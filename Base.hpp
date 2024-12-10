@@ -60,7 +60,7 @@ constexpr Vec4f pointwise(const Vec4f& lhs, const Vec4f& rhs);
 constexpr Vec3f cross(const Vec3f& a, const Vec3f& b);
 constexpr Vec3f surface_normal(const Vec3f& v0, const Vec3f& v1,
                                const Vec3f& v2);
-constexpr Pixel vec2color(const Vec3f &c);
+constexpr Pixel vec2color(const Vec3f& c);
 
 /*****************************************************************************/
 // debug forward decleration
@@ -279,9 +279,9 @@ public:
     static inline Matrix3 i3()
     {
         return {
-            {1,  0, 0},
-            { 0, 1, 0},
-            { 0, 0, 1},
+            { 1, 0, 0 },
+            { 0, 1, 0 },
+            { 0, 0, 1 },
         };
     }
 
@@ -326,10 +326,10 @@ public:
     static inline Matrix4 i4()
     {
         return {
-            {1,  0, 0, 0},
-            { 0, 1, 0, 0},
-            { 0, 0, 1, 0},
-            { 0, 0, 0, 1}
+            { 1, 0, 0, 0 },
+            { 0, 1, 0, 0 },
+            { 0, 0, 1, 0 },
+            { 0, 0, 0, 1 }
         };
     }
 
@@ -426,6 +426,13 @@ inline bool within(fp x, fp a, fp b)
     assert(a < b);
     return x - a > 0 and b - x > 0;
 }
+
+// Interpolate function for barycentric coordinates
+Vec3f interpolate(const Vec3f& b, const Vec3f& c0, const Vec3f& c1,
+                  const Vec3f& c2);
+
+// Interpolate for depth (assuming depth is scalar)
+fp interpolate(const Vec3f& b, const fp& d0, const fp& d1, const fp& d2);
 
 /*****************************************************************************/
 // for debugging

@@ -53,6 +53,21 @@ Vec4f Vec3f::homovector() const
     return { x, y, z, 0 };
 }
 
+Vec3f interpolate(const Vec3f& b, const Vec3f& c0, const Vec3f& c1,
+                  const Vec3f& c2)
+{
+    // Perform barycentric interpolation for Vec3f components
+    return { b.x * c0.x + b.y * c1.x + b.z * c2.x,
+             b.x * c0.y + b.y * c1.y + b.z * c2.y,
+             b.x * c0.z + b.y * c1.z + b.z * c2.z };
+}
+
+fp interpolate(const Vec3f& b, const fp& d0, const fp& d1, const fp& d2)
+{
+    // Perform barycentric interpolation for scalars (depth values)
+    return b.x * d0 + b.y * d1 + b.z * d2;
+}
+
 /*****************************************************************************/
 // Vec4f Methods
 /*****************************************************************************/
@@ -158,8 +173,8 @@ fp Matrix3::minor(IndexPair x) const
         }
     }
     const auto reduced = Matrix2::from_rows({
-        {rc(p[0]),  rc(p[1])},
-        { rc(p[2]), rc(p[3])}
+        { rc(p[0]), rc(p[1]) },
+        { rc(p[2]), rc(p[3]) }
     });
     // dprint("reduced matrix for the current minor ", reduced);
     return reduced.det();
@@ -213,10 +228,10 @@ Matrix4 Matrix4::operator*(const Matrix4& rhs) const
         return dot(self.row(i), rhs.column(j));
     };
     return Matrix4::from_rows({
-        {rc(0,  0), rc(0, 1), rc(0, 2), rc(0, 3)},
-        { rc(1, 0), rc(1, 1), rc(1, 2), rc(1, 3)},
-        { rc(2, 0), rc(2, 1), rc(2, 2), rc(2, 3)},
-        { rc(3, 0), rc(3, 1), rc(3, 2), rc(3, 3)},
+        { rc(0, 0), rc(0, 1), rc(0, 2), rc(0, 3) },
+        { rc(1, 0), rc(1, 1), rc(1, 2), rc(1, 3) },
+        { rc(2, 0), rc(2, 1), rc(2, 2), rc(2, 3) },
+        { rc(3, 0), rc(3, 1), rc(3, 2), rc(3, 3) },
     });
 }
 
@@ -253,9 +268,9 @@ fp Matrix4::minor(IndexPair x) const
     }
 
     return Matrix3::from_rows({
-                                  {rc(p[0]),  rc(p[1]), rc(p[2])},
-                                  { rc(p[3]), rc(p[4]), rc(p[5])},
-                                  { rc(p[6]), rc(p[7]), rc(p[8])},
+                                  { rc(p[0]), rc(p[1]), rc(p[2]) },
+                                  { rc(p[3]), rc(p[4]), rc(p[5]) },
+                                  { rc(p[6]), rc(p[7]), rc(p[8]) },
     })
         .det();
 }
@@ -327,8 +342,8 @@ Vec3f barycentric(const Vec2f& v0, const Vec2f& v1, const Vec2f& v2,
     // const auto [beta, gamma] = solve * Vec2f({p.x-a.x, p.y-a.y});
     // return { 1 - beta - gamma, beta, gamma };
     const Matrix2 solve = Matrix2::from_rows({
-                                                 {v0.x - v2.x,  v1.x - v2.x},
-                                                 { v0.y - v2.y, v1.y - v2.y}
+                                                 { v0.x - v2.x, v1.x - v2.x },
+                                                 { v0.y - v2.y, v1.y - v2.y }
     })
                               .invert();
 
@@ -419,12 +434,12 @@ Clip clip_aa_inner(const Vec3f& normal, const HomoLine& l, fp epsilon)
         {
             // starting point is inside, ending is outside
             return {
-                {l.start, plane_intersection.homopoint()},
+                { l.start, plane_intersection.homopoint() },
                 Clip::ClipType::CutTail
             };
         }
         return {
-            {plane_intersection.homopoint(), l.end},
+            { plane_intersection.homopoint(), l.end },
             Clip::ClipType::CutTail
         };
     }
@@ -442,10 +457,10 @@ Matrix4 homotranslate(const Vec3f& disp)
 {
     // disp stands for "displacement"
     return Matrix4::from_rows({
-        {1,  0, 0, disp.x},
-        { 0, 1, 0, disp.y},
-        { 0, 0, 1, disp.z},
-        { 0, 0, 0, 1     }
+        { 1, 0, 0, disp.x },
+        { 0, 1, 0, disp.y },
+        { 0, 0, 1, disp.z },
+        { 0, 0, 0, 1      }
     });
 }
 
@@ -475,10 +490,10 @@ Matrix4 homorotate(const fp ccw_angle, const Ray& axis)
     auto rotz = [](const fp x)
     {
         return Matrix4::from_rows({
-            {cos(x),  -sin(x), 0, 0},
-            { sin(x), cos(x),  0, 0},
-            { 0,      0,       1, 0},
-            { 0,      0,       0, 1},
+            { cos(x), -sin(x), 0, 0 },
+            { sin(x), cos(x),  0, 0 },
+            { 0,      0,       1, 0 },
+            { 0,      0,       0, 1 },
         });
     };
 
@@ -499,19 +514,19 @@ Matrix4 homorotate(const fp ccw_angle, const Ray& axis)
         else
         {
             step2_axis_to_zx = Matrix4::from_rows({
-                {1,  0,     0,      0},
-                { 0, c / d, -b / d, 0},
-                { 0, b / d, c / d,  0},
-                { 0, 0,     0,      1}
+                { 1, 0,     0,      0 },
+                { 0, c / d, -b / d, 0 },
+                { 0, b / d, c / d,  0 },
+                { 0, 0,     0,      1 }
             });
         }
     }
     const fp len = sqrt(a * a + b * b + c * c);
     const Matrix4 step3_axis_to_z = Matrix4::from_rows({
-        {sqrt(b * b + c * c) / len, 0, -a / len,                  0},
-        { 0,                        1, 0,                         0},
-        { a / len,                  0, sqrt(b * b + c * c) / len, 0},
-        { 0,                        0, 0,                         1}
+        { sqrt(b * b + c * c) / len, 0, -a / len,                  0 },
+        { 0,                         1, 0,                         0 },
+        { a / len,                   0, sqrt(b * b + c * c) / len, 0 },
+        { 0,                         0, 0,                         1 }
     });
     const Matrix4 step4_desired_rotation = rotz(ccw_angle);
     const Matrix4 step5_undo_step3 = step3_axis_to_z.invert();
@@ -532,10 +547,10 @@ Matrix4 homorotate(const fp ccw_angle, const Ray& axis)
 Matrix4 homoscale(fp sx, fp sy, fp sz)
 {
     return Matrix4::from_rows({
-        {sx, 0,  0,  0},
-        { 0, sy, 0,  0},
-        { 0, 0,  sz, 0},
-        { 0, 0,  0,  1}
+        { sx, 0,  0,  0 },
+        { 0,  sy, 0,  0 },
+        { 0,  0,  sz, 0 },
+        { 0,  0,  0,  1 }
     });
 }
 };   // namespace m
