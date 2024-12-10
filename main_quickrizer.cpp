@@ -10,8 +10,6 @@
 #include <string>
 #include <vector>
 
-constexpr bool in_layers = true;
-
 void write_image(const char* filename, unsigned char* data, int width,
                  int height);
 
@@ -47,37 +45,6 @@ int main(int argc, char** argv)
         std::string name = v.filename.substr(0, v.filename.size() - 2) + "ng";
         write_image(name.c_str(), data, v.pixel_grid_columns,
                     v.pixel_grid_rows);
-        if (in_layers)
-        {
-            puts("==================================================");
-            puts("==================================================");
-            auto img_layers = render_layers(w, v);
-            int li = 0;
-            for (auto layer : img_layers)
-            {
-                auto* data = new unsigned char[v.pixel_grid_rows *
-                                               v.pixel_grid_columns * 3];
-                for (size_t i = 0; i < v.pixel_grid_rows; i++)
-                {
-                    for (size_t j = 0; j < v.pixel_grid_columns; j++)
-                    {
-                        const size_t base_index =
-                            (i * v.pixel_grid_columns + j) * 3;
-                        data[base_index + 0] = layer[i][j].r;
-                        data[base_index + 1] = layer[i][j].g;
-                        data[base_index + 2] = layer[i][j].b;
-                    }
-                }
-                std::string name = "li" + std::to_string(li) + "__" +
-                                   v.filename.substr(0, v.filename.size() - 2) +
-                                   "ng";
-                std::cout << name << std::endl;
-                li++;
-                write_image(name.c_str(), data, v.pixel_grid_columns,
-                            v.pixel_grid_rows);
-                delete[] data;
-            }
-        }
         break;   // only the first one for now!
     }
 

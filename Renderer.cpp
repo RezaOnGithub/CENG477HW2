@@ -7,7 +7,6 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -63,24 +62,30 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
     printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", a.x, a.y, b.x,
            b.y);
 
-    Vec2f start, end;
-    if (a.x > b.x)
-    {
-        end = a;
-        start = b;
-    }
-    else
-    {
-        start = a;
-        end = b;
-    }
+    // Ensure `start` is always the point with the smaller x-coordinate
+    Vec2f start = (a.x < b.x) ? a : b;
+    Vec2f end = (a.x < b.x) ? b : a;
 
     fp dx = end.x - start.x;
     fp dy = end.y - start.y;
 
-    fp slope = dy / dx;
-    bool steep = std::abs(slope) > 1.0;
+    std::vector<Vec2f> out;
 
+    // Handle vertical lines explicitly
+    if (dx == 0)
+    {
+        fp step = (dy > 0) ? 1.0f : -1.0f;
+        for (fp y = start.y; (step > 0 ? y <= end.y : y >= end.y); y += step)
+        {
+            out.push_back({ start.x, y });
+        }
+        return out;
+    }
+
+    // Determine if the slope is steep
+    bool steep = std::abs(dy) > std::abs(dx);
+
+    // Swap x and y if the line is steep
     if (steep)
     {
         std::swap(start.x, start.y);
@@ -89,15 +94,17 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
         dy = end.y - start.y;
     }
 
+    // Determine the direction of increment for y
+    fp y_step = (dy > 0) ? 1.0f : -1.0f;
+
     fp d = 2 * std::abs(dy) - dx;
     fp y = start.y;
-    std::vector<Vec2f> out;
 
     for (fp x = start.x; x <= end.x; x += 1.0f)
     {
         if (steep)
         {
-            out.push_back({ y, x });
+            out.push_back({ y, x });   // Swap back x and y for steep lines
         }
         else
         {
@@ -106,7 +113,7 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 
         if (d > 0)
         {
-            y += (dy > 0 ? 1.0f : -1.0f);
+            y += y_step;
             d -= 2 * dx;
         }
         d += 2 * std::abs(dy);
@@ -154,53 +161,52 @@ S3Face step3_device(const S2Face& f, const ViewConfig& v)
 
 S4Polygon step4_sutherland_hodgman(const S3Face& f)
 {
-    // using m::Clip;
-    // const std::vector<Vec3f> plane_normals {
-    //     {0,   0,  1 },
-    //     { 0,  0,  -1},
-    //     { 0,  1,  0 },
-    //     { 0,  -1, 0 },
-    //     { 1,  0,  0 },
-    //     { -1, 0,  0 }
-    // };
-    std::vector<HomoLine> ndc {
-        {f.ndc0,  f.ndc1},
-        { f.ndc1, f.ndc2},
-        { f.ndc2, f.ndc0}
+    using m::Clip;
+    const std::vector<Vec3f> plane_normals {
+        { 0,  0,  1  },
+        { 0,  0,  -1 },
+        { 0,  1,  0  },
+        { 0,  -1, 0  },
+        { 1,  0,  0  },
+        { -1, 0,  0  }
     };
-    // std::vector<HomoLine> new_ndc {};
+    std::vector<HomoLine> ndc {
+        { f.ndc0, f.ndc1 },
+        { f.ndc1, f.ndc2 },
+        { f.ndc2, f.ndc0 }
+    };
+    std::vector<HomoLine> new_ndc {};
 
-    // for (auto normal : plane_normals)
-    // {
-    //     for (auto [start, end] : ndc)
-    //     {
-    //         auto clip = clip_aa_inner(normal, { start, end });
-    //         // TODO does it even make a difference if I used clip's output?
-    //         switch (clip.t)
-    //         {
-    //         case Clip::ClipType::NonExistant :
-    //             // Hope for the best!
-    //             break;
-    //         case Clip::ClipType::CutHead :
-    //             new_ndc.emplace_back(clip.l.start, end);
-    //             break;
-    //         case Clip::ClipType::CutTail :
-    //             new_ndc.emplace_back(start, clip.l.end);
-    //             break;
-    //         case Clip::ClipType::NoCut :
-    //             new_ndc.emplace_back(start, end);
-    //             break;
-    //         }
-    //     }
-    //     ndc.erase(ndc.begin(), ndc.end());
-    //     ndc.insert(ndc.end(), new_ndc.begin(), new_ndc.end());
-    //     new_ndc.erase(new_ndc.begin(), new_ndc.end());
-    // }
+    for (auto normal : plane_normals)
+    {
+        for (auto [start, end] : ndc)
+        {
+            auto clip = clip_aa_inner(normal, { start, end });
+            // TODO does it even make a difference if I used clip's output?
+            switch (clip.t)
+            {
+            case Clip::ClipType::NonExistant :
+                // Hope for the best!
+                break;
+            case Clip::ClipType::CutHead :
+                new_ndc.emplace_back(clip.l.start, end);
+                break;
+            case Clip::ClipType::CutTail :
+                new_ndc.emplace_back(start, clip.l.end);
+                break;
+            case Clip::ClipType::NoCut :
+                new_ndc.emplace_back(start, end);
+                break;
+            }
+        }
+        ndc.erase(ndc.begin(), ndc.end());
+        ndc.insert(ndc.end(), new_ndc.begin(), new_ndc.end());
+        new_ndc.erase(new_ndc.begin(), new_ndc.end());
+    }
     return { f.mother, f.ndc0, f.ndc1, f.ndc2, ndc };
 }
 
-std::vector<S5Raster> step5_rasterize(const S4Polygon& f, const ViewConfig& v,
-                                      bool in_layers)
+S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
 {
     auto tvp_and_dehomogenize_to_2d = [v](const Vec4f& x) -> Vec2f
     {
@@ -211,46 +217,49 @@ std::vector<S5Raster> step5_rasterize(const S4Polygon& f, const ViewConfig& v,
     const Vec2f trig_vpc1 = tvp_and_dehomogenize_to_2d(f.trig_ndc1);
     const Vec2f trig_vpc2 = tvp_and_dehomogenize_to_2d(f.trig_ndc2);
 
+    // dprint("trig_vpc0", trig_vpc0);
+    // dprint("trig_ndc0", f.trig_ndc0);
+    // printf("fragment coordinate X%li Y%li!\n",
+    //        vpc2pc(trig_vpc0, v).column_from_left,
+    //        vpc2pc(trig_vpc0, v).row_from_top);
+
     std::vector<Line2d> vpc_edge {};
-    // for (const auto& [start, end] : f.edge)
-    // {
-    //     vpc_edge.push_back({ tvp_and_dehomogenize_to_2d(start),
-    //                          tvp_and_dehomogenize_to_2d(end) });
-    // }
-    vpc_edge = {
-        {trig_vpc0,  trig_vpc1},
-        { trig_vpc1, trig_vpc2},
-        { trig_vpc2, trig_vpc0}
-    };
+    for (const auto& [start, end] : f.edge)
+    {
+        vpc_edge.push_back({ tvp_and_dehomogenize_to_2d(start),
+                             tvp_and_dehomogenize_to_2d(end) });
+    }
 
     // Candidates are not-quite-fragments in viewport coordinates
     std::vector<Vec2f> vp_candidates {};
-    std::vector<std::vector<Vec2f>> layers_vp_candidates {};
     for (const auto& [start, end] : vpc_edge)
     {
         const std::vector<Vec2f> l = midpoint_algorithm(start, end);
         vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
-        // single extra line to enable layering
-        layers_vp_candidates.push_back(l);
     }
 
-    std::vector<Fragment::Attribute> a(3);
+    Fragment::Attribute a0 {};
+    Fragment::Attribute a1 {};
+    Fragment::Attribute a2 {};
+
     auto ndc2depth = [](const fp x) -> fp
     {
         return (x + 1) / 2.0;
     };
-    a[0].ceng477_color = { static_cast<fp>(f.mother.v0.ceng477_color.r),
-                           static_cast<fp>(f.mother.v0.ceng477_color.g),
-                           static_cast<fp>(f.mother.v0.ceng477_color.b) };
-    a[1].ceng477_color = { static_cast<fp>(f.mother.v1.ceng477_color.r),
-                           static_cast<fp>(f.mother.v1.ceng477_color.g),
-                           static_cast<fp>(f.mother.v1.ceng477_color.b) };
-    a[2].ceng477_color = { static_cast<fp>(f.mother.v2.ceng477_color.r),
-                           static_cast<fp>(f.mother.v2.ceng477_color.g),
-                           static_cast<fp>(f.mother.v2.ceng477_color.b) };
-    a[0].depth = { 0, 0, ndc2depth(f.trig_ndc0.z) };
-    a[1].depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
-    a[2].depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
+
+    a0.ceng477_color = { static_cast<fp>(f.mother.v0.ceng477_color.r),
+                         static_cast<fp>(f.mother.v0.ceng477_color.g),
+                         static_cast<fp>(f.mother.v0.ceng477_color.b) };
+    a1.ceng477_color = { static_cast<fp>(f.mother.v1.ceng477_color.r),
+                         static_cast<fp>(f.mother.v1.ceng477_color.g),
+                         static_cast<fp>(f.mother.v1.ceng477_color.b) };
+    a2.ceng477_color = { static_cast<fp>(f.mother.v2.ceng477_color.r),
+                         static_cast<fp>(f.mother.v2.ceng477_color.g),
+                         static_cast<fp>(f.mother.v2.ceng477_color.b) };
+    a0.depth = { 0, 0, ndc2depth(f.trig_ndc0.z) };
+    a1.depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
+    a2.depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
+
     auto noperspective = [&](const Vec2f vpp, const Vec3f& c0, const Vec3f& c1,
                              const Vec3f& c2) -> Vec3f
     {
@@ -263,86 +272,37 @@ std::vector<S5Raster> step5_rasterize(const S4Polygon& f, const ViewConfig& v,
         return { dot(b, xs), dot(b, ys), dot(b, zs) };
     };
 
-    // No layering- nothing's changed
     std::vector<Fragment> frag {};
     for (auto vpp : vp_candidates)
     {
+        Vec3f xxx = noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+                                  a2.ceng477_color);
         frag.push_back({
             vpc2pc(vpp, v),
-            {noperspective(vpp, a[0].ceng477_color, a[1].ceng477_color,
-                      a[2].ceng477_color),
-                      noperspective(vpp, a[0].depth, a[1].depth, a[2].depth)}
+            { noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+                      a2.ceng477_color),
+                      noperspective(vpp, a0.depth, a1.depth, a2.depth) }
         });
     }
-    if (not in_layers)
-    {
-        return {
-            {f.mother, frag}
-        };
-    }
 
-    std::vector<std::vector<Fragment>> layers_frag;
-    for (auto layer_viewport : layers_vp_candidates)
-    {
-        std::vector<Fragment> frag {};
-        for (auto vpp : layer_viewport)
-        {
-            frag.push_back({
-                vpc2pc(vpp, v),
-                {noperspective(vpp, a[0].ceng477_color, a[1].ceng477_color,
-                          a[2].ceng477_color),
-                          noperspective(vpp, a[0].depth, a[1].depth, a[2].depth)}
-            });
-        }
-        layers_frag.push_back(frag);
-    }
-    std::vector<S5Raster> out;
-    for (auto fl : layers_frag)
-    {
-        out.push_back({ f.mother, fl });
-    }
-    return out;
+    // m::Vec3f red { 255, 0, 0 };
+    // std::vector<Fragment> frag {
+    //     {vpc2pc(trig_vpc0,  v), { red, red }},
+    //     { vpc2pc(trig_vpc1, v), { red, red }},
+    //     { vpc2pc(trig_vpc2, v), { red, red }},
+    // };
+
+    return { f.mother, frag };
 }
 
 // Rasterize every triangle, perform depth test, write to an output buffer
-std::vector<std::vector<std::vector<Pixel>>> render(const World& w, const ViewConfig& v,
-                                       bool in_layers)
+std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
 {
-    if (not in_layers)
-    {
-        std::vector<Fragment> fragments {};
-        std::vector pbuffer(v.pixel_grid_rows,
-                            std::vector(v.pixel_grid_columns, v.bg_color));
+    std::vector<Fragment> fragments {};
+    std::vector pbuffer(v.pixel_grid_rows,
+                        std::vector(v.pixel_grid_columns, v.bg_color));
 
-        // rasterize every triangle in the scene
-        for (size_t i = 0; i < w.face_count(); i++)
-        {
-            const WorldFace& f = w.get_face(i);
-            const auto& s1 = step1_camera(f, v);
-            const auto& s2 = step2_bfc(s1, v);
-            const auto& s3 = step3_device(s2, v);
-            const auto& s4 = step4_sutherland_hodgman(s3);
-            const auto& s5 = step5_rasterize(s4, v, false);
-            fragments.insert(fragments.end(), s5[0].out.begin(),
-                             s5[0].out.end());
-        }
-
-        for (const auto& d : fragments)
-        {
-            pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
-                vec2color(d.a.ceng477_color);
-        }
-
-        return {pbuffer};
-    }
-}
-
-std::vector<std::vector<std::vector<Pixel>>> render_layers(const World& w,
-                                                           const ViewConfig& v)
-{
-    // std::vector<Fragment> fragments {};
-
-    std::vector<S5Raster> debug_tri_lines {};
+    std::vector<std::vector<Fragment>> debug_ls {};
     // rasterize every triangle in the scene
     for (size_t i = 0; i < w.face_count(); i++)
     {
@@ -351,24 +311,55 @@ std::vector<std::vector<std::vector<Pixel>>> render_layers(const World& w,
         const auto& s2 = step2_bfc(s1, v);
         const auto& s3 = step3_device(s2, v);
         const auto& s4 = step4_sutherland_hodgman(s3);
-        const auto& s5 = step5_rasterize_layers(s4, v);
-        debug_tri_lines.insert(debug_tri_lines.end(), s5.begin(), s5.end());
-        printf("#%lu ^^^\n", debug_tri_lines.size() - 1);
-        // fragments.insert(fragments.end(), s5.out.begin(), s5.out.end());
+        const auto& s5 = step5_rasterize(s4, v);
+        debug_ls.push_back(s5.out);
+        fragments.insert(fragments.end(), s5.out.begin(), s5.out.end());
     }
 
-    std::vector<std::vector<std::vector<Pixel>>> layers {};
-    for (auto layer : debug_tri_lines)
+    printf("resultant fragment count %lu\n", fragments.size());
+
+    // turn surviving fragments into pixels
+    std::vector<long> seen_x {};
+    std::vector<long> seen_y {};
+    for (const auto& d : fragments)
     {
-        std::vector pbuffer(v.pixel_grid_rows,
-                            std::vector(v.pixel_grid_columns, v.bg_color));
-        for (const auto& d : layer.out)
+        auto color = [](const Vec3f& c) -> Pixel
         {
-            pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
-                vec2color(d.a.ceng477_color);
+            return { static_cast<unsigned char>(c.x > 255 ? 255 :
+                                                c.x < 0   ? 0 :
+                                                            c.x),
+                     static_cast<unsigned char>(c.y > 255 ? 255 :
+                                                c.y < 0   ? 0 :
+                                                            c.y),
+                     static_cast<unsigned char>(c.z > 255 ? 255 :
+                                                c.z < 0   ? 0 :
+                                                            c.z) };
+        };
+
+        // FIXME comment out these sanity checks at some point
+
+        if (d.pc.row_from_top < 0 || d.pc.column_from_left < 0 ||
+            d.pc.row_from_top >= v.pixel_grid_rows ||
+            d.pc.column_from_left >= v.pixel_grid_columns)
+        {
+            printf("invalid fragment coordinate %li %li!\n",
+                   d.pc.column_from_left, d.pc.row_from_top);
+            continue;
         }
-        layers.push_back(pbuffer);
+        if (std::ranges::find(seen_x, d.pc.column_from_left) != seen_x.end())
+        {
+            if (std::ranges::find(seen_y, d.pc.row_from_top) != seen_y.end())
+            {
+                // FIXME yeah yeah overdraw
+                // printf("OVERDRAW! At %lu %lu\n", d.pc.column_from_left,
+                // d.pc.row_from_top);
+            }
+        }
+        seen_x.push_back(d.pc.column_from_left);
+        seen_y.push_back(d.pc.row_from_top);
+        pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
+            color(d.a.ceng477_color);
     }
 
-    return layers;
+    return pbuffer;
 }
