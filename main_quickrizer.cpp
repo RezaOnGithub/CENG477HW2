@@ -49,6 +49,8 @@ int main(int argc, char** argv)
                     v.pixel_grid_rows);
         if (in_layers)
         {
+            puts("==================================================");
+            puts("==================================================");
             auto img_layers = render_layers(w, v);
             int li = 0;
             for (auto layer : img_layers)

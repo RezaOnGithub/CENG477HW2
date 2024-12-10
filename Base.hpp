@@ -60,6 +60,7 @@ constexpr Vec4f pointwise(const Vec4f& lhs, const Vec4f& rhs);
 constexpr Vec3f cross(const Vec3f& a, const Vec3f& b);
 constexpr Vec3f surface_normal(const Vec3f& v0, const Vec3f& v1,
                                const Vec3f& v2);
+constexpr Pixel vec2color(const Vec3f &c);
 
 /*****************************************************************************/
 // debug forward decleration
@@ -396,6 +397,19 @@ constexpr Vec3f surface_normal(const Vec3f& v0, const Vec3f& v1,
     return { u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z,
              u.x * v.y - u.y * v.x };
 }
+
+constexpr Pixel vec2color(const Vec3f& c)
+{
+    return { static_cast<unsigned char>(c.x > 255 ? 255 :
+                                        c.x < 0   ? 0 :
+                                                    c.x),
+             static_cast<unsigned char>(c.y > 255 ? 255 :
+                                        c.y < 0   ? 0 :
+                                                    c.y),
+             static_cast<unsigned char>(c.z > 255 ? 255 :
+                                        c.z < 0   ? 0 :
+                                                    c.z) };
+};
 
 /*****************************************************************************/
 // misc
