@@ -315,17 +315,25 @@ Vec3f normalize(const Vec3f& a)
     return { a.x / len, a.y / len, a.z / len };
 }
 
-Vec3f barycentric(const Vec2f& a, const Vec2f& b, const Vec2f& c,
-                  const Vec2f& p)
+Vec3f barycentric(const Vec2f& v0, const Vec2f& v1, const Vec2f& v2,
+                  const Vec2f& r)
 {
+    // const Matrix2 solve = Matrix2::from_rows({
+    //                                              {b.x - a.x,  c.x - a.x},
+    //                                              { b.y - a.y, c.y - a.y}
+    // })
+    //                           .invert();
+
+    // const auto [beta, gamma] = solve * Vec2f({p.x-a.x, p.y-a.y});
+    // return { 1 - beta - gamma, beta, gamma };
     const Matrix2 solve = Matrix2::from_rows({
-                                                 {b.x - a.x,  c.x - a.x},
-                                                 { b.y - a.y, c.y - a.y}
+                                                 {v0.x - v2.x,  v1.x - v2.x},
+                                                 { v0.y - v2.y, v1.y - v2.y}
     })
                               .invert();
 
-    const auto [beta, gamma] = solve * Vec2f({p.x-a.x, p.y-a.y});
-    return { 1 - beta - gamma, beta, gamma };
+    const auto [alpha, beta] = solve * Vec2f({ r.x - v2.x, r.y - v2.y });
+    return { alpha, beta, 1 - alpha - beta };
 }
 
 // TODO I have tried my best not to dehomogenize and hope for correctness
