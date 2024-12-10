@@ -56,7 +56,7 @@ constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
 
 std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 {
-    assert(std::isfinite(a.x) and std::isfinite(b.x) and std::isfinite(a.y) and
+    assert(std::isfinite(a.x) && std::isfinite(b.x) && std::isfinite(a.y) &&
            std::isfinite(b.y));
 
     printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", a.x, a.y, b.x,
@@ -74,31 +74,43 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
         end = b;
     }
 
-    // end.x >= start.x guarenteed
+    fp dx = end.x - start.x;
+    fp dy = end.y - start.y;
 
-    auto implicit_line = [start, end](const fp x, const fp y) -> fp
+    fp slope = dy / dx;
+    bool steep = std::abs(slope) > 1.0;
+
+    if (steep)
     {
-        return (start.y - end.y) * x + (end.x - start.x) * y + start.x * end.y -
-               start.y * end.x;
-    };
+        std::swap(start.x, start.y);
+        std::swap(end.x, end.y);
+        dx = end.x - start.x;
+        dy = end.y - start.y;
+    }
 
-    // midpoint algorithm, Page 165
-    std::vector<Vec2f> out {};
+    fp d = 2 * std::abs(dy) - dx;
     fp y = start.y;
-    fp d = implicit_line(start.x + 1, start.y + 0.5);
-    for (int i = 0; start.x + i <= round(end.x) + 1; i++)
+    std::vector<Vec2f> out;
+
+    for (fp x = start.x; x <= end.x; x += 1.0f)
     {
-        out.push_back({ start.x + i, y });
-        if (d < 0)
+        if (steep)
         {
-            y++;
-            d += (end.x - start.x) + (start.y - end.y);
+            out.push_back({ y, x });
         }
         else
         {
-            d += (start.y - end.y);
+            out.push_back({ x, y });
         }
+
+        if (d > 0)
+        {
+            y += (dy > 0 ? 1.0f : -1.0f);
+            d -= 2 * dx;
+        }
+        d += 2 * std::abs(dy);
     }
+
     return out;
 }
 
@@ -143,17 +155,17 @@ S4Polygon step4_sutherland_hodgman(const S3Face& f)
 {
     using m::Clip;
     const std::vector<Vec3f> plane_normals {
-        {0,   0,  1 },
-        { 0,  0,  -1},
-        { 0,  1,  0 },
-        { 0,  -1, 0 },
-        { 1,  0,  0 },
-        { -1, 0,  0 }
+        { 0,  0,  1  },
+        { 0,  0,  -1 },
+        { 0,  1,  0  },
+        { 0,  -1, 0  },
+        { 1,  0,  0  },
+        { -1, 0,  0  }
     };
     std::vector<HomoLine> ndc {
-        {f.ndc0,  f.ndc1},
-        { f.ndc1, f.ndc2},
-        { f.ndc2, f.ndc0}
+        { f.ndc0, f.ndc1 },
+        { f.ndc1, f.ndc2 },
+        { f.ndc2, f.ndc0 }
     };
     std::vector<HomoLine> new_ndc {};
 
@@ -259,9 +271,9 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
                                   a2.ceng477_color);
         frag.push_back({
             vpc2pc(vpp, v),
-            {noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
+            { noperspective(vpp, a0.ceng477_color, a1.ceng477_color,
                       a2.ceng477_color),
-                      noperspective(vpp, a0.depth, a1.depth, a2.depth)}
+                      noperspective(vpp, a0.depth, a1.depth, a2.depth) }
         });
     }
 
