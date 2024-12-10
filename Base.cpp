@@ -185,6 +185,52 @@ Matrix3 Matrix3::transpose() const
     return { row(0), row(1), row(2) };
 }
 
+Vec3f Matrix3::operator*(const Vec3f& v) const
+{
+    return { dot(this->transpose().c0, v), dot(this->transpose().c1, v),
+             dot(this->transpose().c2, v) };
+}
+
+Matrix3 Matrix3::invert() const
+{
+    // Compute determinant
+    fp determinant = this->det();
+    if (determinant == 0)
+    {
+        throw std::runtime_error(
+            "Matrix is not invertible (determinant is zero).");
+    }
+
+    // Compute cofactors
+    Vec3f cofactorRow0(minor({ 0, 0 }),    // Cofactor for element (0,0)
+                       -minor({ 0, 1 }),   // Cofactor for element (0,1)
+                       minor({ 0, 2 })     // Cofactor for element (0,2)
+    );
+
+    Vec3f cofactorRow1(-minor({ 1, 0 }),   // Cofactor for element (1,0)
+                       minor({ 1, 1 }),    // Cofactor for element (1,1)
+                       -minor({ 1, 2 })    // Cofactor for element (1,2)
+    );
+
+    Vec3f cofactorRow2(minor({ 2, 0 }),    // Cofactor for element (2,0)
+                       -minor({ 2, 1 }),   // Cofactor for element (2,1)
+                       minor({ 2, 2 })     // Cofactor for element (2,2)
+    );
+
+    // Form adjugate matrix (transpose of cofactor matrix)
+    Matrix3 adjugate =
+        Matrix3::from_rows({ cofactorRow0, cofactorRow1, cofactorRow2 })
+            .transpose();
+
+    // Divide by determinant
+    return adjugate.scale(1.0 / determinant);
+}
+
+Matrix3 Matrix3::scale(fp s) const
+{
+    return Matrix3::from_columns({ c0.scale(s), c1.scale(s), c2.scale(s) });
+}
+
 /*****************************************************************************/
 // Matrix4 Methods
 /*****************************************************************************/
@@ -341,14 +387,25 @@ Vec3f barycentric(const Vec2f& v0, const Vec2f& v1, const Vec2f& v2,
 
     // const auto [beta, gamma] = solve * Vec2f({p.x-a.x, p.y-a.y});
     // return { 1 - beta - gamma, beta, gamma };
-    const Matrix2 solve = Matrix2::from_rows({
-                                                 { v0.x - v2.x, v1.x - v2.x },
-                                                 { v0.y - v2.y, v1.y - v2.y }
-    })
-                              .invert();
 
-    const auto [alpha, beta] = solve * Vec2f({ r.x - v2.x, r.y - v2.y });
-    return { alpha, beta, 1 - alpha - beta };
+    // const Matrix2 solve = Matrix2::from_rows({
+    //                                              { v0.x - v2.x, v1.x - v2.x
+    //                                              }, { v0.y - v2.y, v1.y -
+    //                                              v2.y }
+    // })
+    //                           .invert();
+    //
+    // const auto [alpha, beta] = solve * Vec2f({ r.x - v2.x, r.y - v2.y });
+    // return { alpha, beta, 1 - alpha - beta };
+
+    const Matrix3 solve = Matrix3::from_columns({
+        { v0.x, v0.y, 1 },
+        { v1.x, v1.y, 1 },
+        { v2.x, v2.y, 1 }
+    });
+    const Matrix3 solve_inverse = solve.invert();
+    const Vec3f alpha_beta_gamma = solve_inverse * Vec3f { r.x, r.y, 1 };
+    return alpha_beta_gamma;
 }
 
 // TODO I have tried my best not to dehomogenize and hope for correctness

@@ -298,6 +298,9 @@ public:
     fp det() const;
     fp minor(IndexPair x) const;
     Matrix3 transpose() const;
+    Vec3f operator*(const Vec3f& v) const;
+    [[nodiscard]] Matrix3 invert() const;
+    [[nodiscard]] Matrix3 scale(fp s) const;
 };
 
 class Matrix4
