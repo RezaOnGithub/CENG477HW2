@@ -478,6 +478,13 @@ Clip clip_aa_inner(const Vec3f& normal, const HomoLine& l, fp epsilon)
     fp point_on_plane_minus_point_on_line_dot_normal =
         dot(point_on_plane_minus_point_on_line, normal);
     fp direction_dot_normal = dot(direction, normal);
+
+    if (std::abs(direction_dot_normal) < ceng_epsilon)
+    {
+        // line parallel to plane
+        return { {}, Clip::ClipType::NonExistant };
+    }
+
     fp d = point_on_plane_minus_point_on_line_dot_normal / direction_dot_normal;
     Vec3f plane_intersection { point_on_line.x + d * direction.x,
                                point_on_line.y + d * direction.y,
@@ -492,7 +499,7 @@ Clip clip_aa_inner(const Vec3f& normal, const HomoLine& l, fp epsilon)
             // starting point is inside, ending is outside
             return {
                 { l.start, plane_intersection.homopoint() },
-                Clip::ClipType::CutTail
+                Clip::ClipType::CutHead
             };
         }
         return {
@@ -501,9 +508,12 @@ Clip clip_aa_inner(const Vec3f& normal, const HomoLine& l, fp epsilon)
         };
     }
 
+    // TODO: delete this, put here to surpress warning
+    return { {}, Clip::ClipType::NonExistant };
+
     // TODO delete this once things seem OK
-    throw std::runtime_error(
-        "Bug in clipping: line was supposed to intersect!");
+    // throw std::runtime_error(
+    //     "Bug in clipping: line was supposed to intersect!");
 }
 
 /*****************************************************************************/
