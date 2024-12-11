@@ -21,11 +21,11 @@ int main(int argc, char** argv)
     }
 
     const char* xmlPath = argv[1];
-    const ceng::Scene &scene = ceng::Scene(xmlPath);
+    const ceng::Scene& scene = ceng::Scene(xmlPath);
     const World& w = World(scene);
     const std::vector<ViewConfig>& views = extract_views(scene);
 
-    for (const auto &v : views)
+    for (const auto& v : views)
     {
         const auto& fragments = render(w, v);
         const size_t pixel_count = v.pixel_grid_rows * v.pixel_grid_columns;
@@ -46,9 +46,10 @@ int main(int argc, char** argv)
             data[pixel_index * 3 + 1] = c.g;
             data[pixel_index * 3 + 2] = c.b;
         }
-        std::string name = v.filename.substr(0, v.filename.size() - 2) + "ng";
+        std::string name = v.filename;
         write_image(name.c_str(), data, v.pixel_grid_columns,
                     v.pixel_grid_rows);
+        delete[] data;
     }
 
     return 0;
