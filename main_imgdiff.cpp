@@ -1,15 +1,19 @@
-// Single-file utility to compare two PNGs
-// does not need anything other than raylib
-
-#include "raylib.h"
-
-#include <cassert>
-#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <raylib.h>
 #include <string>
 #include <vector>
 
-const std::string left = std::string(CENG477_RESOURCE) + "";
-const std::string right = std::string(CENG477_RESOURCE) + "../build/";
+// TODO BUG: images larger than a certain size bug out the window! example:
+// marbles.xml
+// TODO does drawing fg texture after bg texture actually create bg/fg effect?
+// Or do I risk Z-fighting?
+// TODO viewport scaling
+// TODO equality indicator
+// TODO SPACE to view diffmask
+// TODO press ENTER to render out in scanlines, pause when an invalid output is
+// generated
 
 namespace base
 {
@@ -27,10 +31,11 @@ struct Vec2i
 };
 }   // namespace base
 
-std::vector<base::Vec2i> cmpimg(Image l, Image r)
+const std::string resource_path { CENG477_RESOURCE };
+
+Image cmpimg(Image l, Image r)
 {
     std::vector<base::Vec2i> diffcoord;
-    assert(l.width == r.width && l.height == r.height);
     for (int i = 0; i < l.width; i++)
     {
         for (int j = 0; j < l.height; j++)
@@ -43,12 +48,7 @@ std::vector<base::Vec2i> cmpimg(Image l, Image r)
             }
         }
     }
-    return diffcoord;
-}
-
-Image diff_mask(std::vector<base::Vec2i> diffcoord, size_t w, size_t h)
-{
-    Image mask = GenImageColor(w, h, BLANK);
+    Image mask = GenImageColor(l.width, l.height, BLANK);
     for (auto d : diffcoord)
     {
         ImageDrawPixel(&mask, d.x, d.y, VIOLET);
@@ -58,50 +58,53 @@ Image diff_mask(std::vector<base::Vec2i> diffcoord, size_t w, size_t h)
 
 int main(int argc, char** argv)
 {
-    using namespace std;
-
-    Image l = LoadImage(left.c_str());
-    Image r = LoadImage(right.c_str());
-
-    if (l.width != r.width || l.height != r.height)
+    if (argc < 3)
     {
-        fprintf(stderr, "image size mismatch! cannot compare");
-        exit(EXIT_FAILURE);
+        puts("not enough arguments");
+        exit(EXIT_SUCCESS);
     }
+    const std::string lname = std::string(argv[1]);
+    const std::string rname = std::string(argv[2]);
+    const Image left = LoadImage(lname.c_str());
+    const Image right = LoadImage(rname.c_str());
+    const Image diff = cmpimg(left, right);
 
-    vector<base::Vec2i> diffcoord = cmpimg(l, r);
-    Image diffmask = diff_mask(diffcoord, l.width, l.height);
+    // early init required for loading Texture (a GPU-bound object)
+    InitWindow(left.width, left.height,
+               ((std::string("Renderdiff:  ") + lname).c_str()));
+    SetTargetFPS(10);
+    SetTraceLogLevel(LOG_FATAL);
 
-    for (size_t i = 0; i < l.width; i++)
-    {
-        for (size_t j = 0; j < l.height; j++)
-        {
-            Color lc = GetImageColor(l, i, j);
-            Color rc = GetImageColor(r, i, j);
-            if (ColorToInt(lc) != ColorToInt(rc))
-            {
-                ImageDrawPixel(&diffmask, i, j, VIOLET);
-                diffcoord.push_back(
-                    { static_cast<int>(i), static_cast<int>(j) });
-            }
-        }
-    }
-
-    // early init required for texture loading
-    InitWindow(l.width * 2, l.height, "ImgDiff");
-    SetTargetFPS(60);
-
-    Texture2D lt = LoadTextureFromImage(l);
-    Texture2D rt = LoadTextureFromImage(diffmask);
+    // States needed to make a new frame
+    bool show_right = false;
+    bool diffmode = false;
 
     while (!WindowShouldClose())
     {
+        show_right = IsKeyDown(KEY_LEFT_SHIFT);
+        diffmode = IsKeyDown(KEY_SPACE);
+
+        Image canvas;
+
+        if (not show_right)
+        {
+            canvas = right;
+        }
+        else
+        {
+            canvas = left;
+        }
+
+        if (diffmode)
+        {
+            canvas = diff;
+        }
+        Texture2D tx = LoadTextureFromImage(canvas);
         BeginDrawing();
-
-        DrawTexture(lt, 0, 0, WHITE);
-        DrawTexture(rt, l.width + 1, 0, WHITE);
-
+        ClearBackground(BLANK);
+        DrawTexture(tx, 0, 0, WHITE);
         EndDrawing();
+        UnloadTexture(tx);
     }
     CloseWindow();
 }
