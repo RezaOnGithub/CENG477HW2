@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <optional>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -58,8 +59,8 @@ std::vector<Fragment> ztest(const std::vector<Fragment>& fbuffer,
         if (row < 0 or column < 0 or row >= v.pixel_grid_rows or
             column >= v.pixel_grid_columns)
         {
-            // FIXME will clipping ever work ?!
-            printf("invalid fragment coordinate R%li C%li! Fix clipping!\n",
+            printf("invalid fragment coordinate R%li C%li! WIREFRAME: "
+                   "clipping, SOLID: tri filling\n",
                    row, column);
             continue;
         }
@@ -161,6 +162,58 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
         d += 2 * std::abs(dy);
     }
 
+    return out;
+}
+
+std::vector<Vec2f> fill_triangle(const Vec2f& v0, const Vec2f& v1,
+                                 const Vec2f& v2, const ViewConfig& v)
+{
+    auto min_bound = [](fp a, fp b, fp c, fp lower_bound) -> fp
+    {
+        fp m = INFINITY;   // whatever abnormalities there are, hope it is
+                           // caught later
+        m = a < m ? a : m;
+        m = b < m ? b : m;
+        m = c < m ? c : m;
+        m = m < lower_bound ? lower_bound : m;
+        assert(isfinite(m));
+        return round(m);
+    };
+
+    auto max_bound = [](fp a, fp b, fp c, fp upper_bound) -> fp
+    {
+        fp m = 0;   // be resilient even when min_bound isn't
+        m = a > m ? a : m;
+        m = b > m ? b : m;
+        m = c > m ? c : m;
+        m = m > upper_bound ? upper_bound : m;
+        assert(isfinite(m));
+        return round(m);
+    };
+
+    // determine a bounding box for the fragments
+    fp minx = min_bound(v0.x, v1.x, v2.x, 0);
+    fp maxx = max_bound(v0.x, v1.x, v2.x, v.pixel_grid_columns - 1);
+    fp miny = min_bound(v0.y, v1.y, v2.y, 0);
+    fp maxy = max_bound(v0.y, v1.y, v2.y, v.pixel_grid_rows - 1);
+
+    // printf("filling a triangle, from (%.0lf,%.0lf) to (%.0lf,%.0lf)\n", minx,
+    //        miny, maxx, maxy);
+
+    std::vector<Vec2f> out;
+    for (fp x = minx; x <= maxx; x++)
+    {
+        for (fp y = miny; y <= maxy; y++)
+        {
+            const auto& b = barycentric(v0, v1, v2, { x, y });
+            // TODO textbook says "do it this way", but check samples
+            // TODO epsilon testing?
+            if (b.x >= 0 and b.y >= 0 and b.z >= 0)
+            {
+                out.push_back({ x, y });
+            }
+        }
+    }
     return out;
 }
 
@@ -270,19 +323,30 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     //        vpc2pc(trig_vpc0, v).column_from_left,
     //        vpc2pc(trig_vpc0, v).row_from_top);
 
-    std::vector<Line2d> vpc_edge {};
-    for (const auto& [start, end] : f.edge)
-    {
-        vpc_edge.push_back({ tvp_and_dehomogenize_to_2d(start),
-                             tvp_and_dehomogenize_to_2d(end) });
-    }
-
     // Candidates are not-quite-fragments in viewport coordinates
     std::vector<Vec2f> vp_candidates {};
-    for (const auto& [start, end] : vpc_edge)
+
+    if (f.mother.mode == WorldFace::RenderMode::WIREFRAME)
     {
-        const std::vector<Vec2f> l = midpoint_algorithm(start, end);
-        vp_candidates.insert(vp_candidates.end(), l.begin(), l.end());
+        std::vector<Line2d> vpc_edge {};
+        for (const auto& [start, end] : f.edge)
+        {
+            vpc_edge.push_back({ tvp_and_dehomogenize_to_2d(start),
+                                 tvp_and_dehomogenize_to_2d(end) });
+        }
+
+        for (const auto& [start, end] : vpc_edge)
+        {
+            const std::vector<Vec2f> line = midpoint_algorithm(start, end);
+            vp_candidates.insert(vp_candidates.end(), line.begin(), line.end());
+        }
+    }
+
+    if (f.mother.mode == WorldFace::RenderMode::SOLID)
+    {
+        const std::vector<Vec2f> fill =
+            fill_triangle(trig_vpc0, trig_vpc1, trig_vpc2, v);
+        vp_candidates.insert(vp_candidates.end(), fill.begin(), fill.end());
     }
 
     Fragment::Attribute a0 {};
@@ -291,7 +355,7 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
 
     auto ndc2depth = [](const Vec4f& ndc) -> Vec3f
     {
-        auto z = ndc.dehomogenize().z;
+        auto z = -ndc.dehomogenize().z;
         auto depth = (z + 1) / 2.0;
         return { 0, 0, depth };
     };
@@ -390,29 +454,24 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
     printf("surviving fragment count %lu\n", fragments.size());
 
     // turn surviving fragments into pixels
-    std::vector<PixelCoordinate> seen_pc;
-    seen_pc.reserve(fragments.size());
+    // FIXME get rid of seen counter. noticable perf impact!
+    std::set<std::pair<long, long>> seen_rc;
+    size_t overdraw_count = 0;
     for (const auto& d : fragments)
     {
-        if (std::ranges::find_if(seen_pc,
-                                 [&](PixelCoordinate spc)
-                                 {
-                                     return spc.column_from_left ==
-                                                d.pc.column_from_left and
-                                            spc.row_from_top ==
-                                                d.pc.row_from_top;
-                                 }) != seen_pc.end())
+        if (seen_rc.contains({ d.pc.row_from_top, d.pc.column_from_left }))
         {
-            printf("overdrawn fragment At R%li C%li! fix ztest!\n",
-                   d.pc.row_from_top, d.pc.column_from_left);
+            // printf("overdrawn fragment At R%li C%li! fix ztest!\n",
+            //        d.pc.row_from_top, d.pc.column_from_left);
+            overdraw_count++;
         }
         else
         {
-            seen_pc.push_back(d.pc);
+            seen_rc.insert({ d.pc.row_from_top, d.pc.column_from_left });
         }
         pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
             m::vec2color(d.a.ceng477_color);
     }
-
+    printf("%lu fragments were overdrawn!\n", overdraw_count);
     return pbuffer;
 }
