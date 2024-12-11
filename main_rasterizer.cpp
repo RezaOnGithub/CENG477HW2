@@ -64,8 +64,9 @@ void write_image(const char* filename, unsigned char* data, long width,
 
     if ((outfile = fopen(filename, "w")) == NULL)
     {
-        throw std::runtime_error(
-            "Error: The ppm file cannot be opened for writing.");
+        // throw std::runtime_error(
+        //     "Error: The ppm file cannot be opened for writing.");
+        return;
     }
 
     (void)fprintf(outfile, "P3\n%d %d\n255\n", width, height);

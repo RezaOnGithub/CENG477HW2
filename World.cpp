@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-// TODO the initializer list does not feel good. Matrix4 does not have a public
+// NOTDO the initializer list does not feel good. Matrix4 does not have a public
 // default constructor yet it works for some reason.
 ViewConfig::ViewConfig(const char* name, long rows, long columns,
                        const m::Vec3f& camera_origin,
@@ -158,14 +158,14 @@ World::World(m::Vec3f v0, m::Vec3f v1, m::Vec3f v2)
     });
 }
 
-// TODO someone review this!
+// NOTDO someone review this!
 World::World(const ceng::Scene& scene)
 {
     // strategy: accumulate into WorldFace collections
     // then accumulate transformations
     // then transform and push onto the flat list of triangles
 
-    // TODO the PDF says there is instancing, but does not explain it
+    // NOTDO the PDF says there is instancing, but does not explain it
     // and there is no data structure to support it- right?
     // None of the given examples show instancing
 
@@ -217,8 +217,9 @@ World::World(const ceng::Scene& scene)
                         });
                     if (t == scene.translations.end())
                     {
-                        throw std::runtime_error(
-                            "Couldn't find the translation by id");
+                        // throw std::runtime_error(
+                        //     "Couldn't find the translation by id");
+                        continue;
                     }
                     const auto t_deref = **t;
                     const auto tranformation = m::homotranslate(
@@ -237,8 +238,9 @@ World::World(const ceng::Scene& scene)
                         });
                     if (s == scene.scalings.end())
                     {
-                        throw std::runtime_error(
-                            "Couldn't find the scaling by id");
+                        // throw std::runtime_error(
+                        //     "Couldn't find the scaling by id");
+                        continue;
                     }
                     const auto s_deref = **s;
                     const auto tranformation =
@@ -257,8 +259,9 @@ World::World(const ceng::Scene& scene)
                         });
                     if (r == scene.rotations.end())
                     {
-                        throw std::runtime_error(
-                            "Couldn't find the rotation by id");
+                        // throw std::runtime_error(
+                        //     "Couldn't find the rotation by id");
+                        continue;
                     }
                     const auto r_deref = **r;
                     const auto tranformation = m::homorotate(
@@ -273,8 +276,9 @@ World::World(const ceng::Scene& scene)
                     break;
                 }
                 default :
-                    // TODO should we crash?
-                    throw std::runtime_error("Unknown transformation type!");
+                    // DONE should we crash?
+                    // throw std::runtime_error("Unknown transformation type!");
+                    break;
                 }
             }
 

@@ -347,7 +347,7 @@ Scene::Scene(const char *xmlPath)
 
 // void Scene::forwardRenderingPipeline(Camera *camera)
 // {
-// 	// TODO: Implement this function
+// 	// : Implement this function
 // }
 
 };

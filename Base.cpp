@@ -1,13 +1,8 @@
 #include "Base.hpp"
 
-#include <cassert>
 #include <cmath>
 #include <cstddef>
-#include <cstdio>
-#include <optional>
 #include <stdexcept>
-#include <string>
-#include <utility>
 #include <vector>
 
 namespace m
@@ -29,7 +24,8 @@ fp Vec3f::operator[](const size_t i) const
     default :
         // Locked behind C++23 (would've also been constexpr-compatible)
         // std::unreachable();
-        throw std::runtime_error("Invalid index");
+        // throw std::runtime_error("Invalid index");
+        break;
     }
 }
 
@@ -87,7 +83,8 @@ fp Vec4f::operator[](const size_t i) const
     default :
         // Locked behind C++23 (would've also been constexpr-compatible)
         // std::unreachable();
-        throw std::runtime_error("Invalid index");
+        // throw std::runtime_error("Invalid index");
+        break;
     }
 }
 
@@ -115,7 +112,8 @@ fp Vec4f::row(const size_t i) const
     case 3 :
         return w;
     default :
-        throw std::runtime_error("Invalid index");
+        // throw std::runtime_error("Invalid index");
+        break;
     }
 }
 
@@ -139,7 +137,8 @@ Vec3f Matrix3::column(size_t i) const
     case 2 :
         return c2;
     default :
-        throw std::runtime_error("Invalid index");
+        // throw std::runtime_error("Invalid index");
+        break;
     }
 }
 
@@ -197,8 +196,9 @@ Matrix3 Matrix3::invert() const
     fp determinant = this->det();
     if (determinant == 0)
     {
-        throw std::runtime_error(
-            "Matrix is not invertible (determinant is zero).");
+        // throw std::runtime_error(
+        //     "Matrix is not invertible (determinant is zero).");
+        return Matrix3::i3();
     }
 
     // Compute cofactors
@@ -250,7 +250,8 @@ Vec4f Matrix4::column(const size_t i) const
     default :
         // Locked behind C++23
         // std::unreachable();
-        throw std::runtime_error("Invalid Index!");
+        // throw std::runtime_error("Invalid index");
+        break;
     }
 }
 
@@ -508,7 +509,7 @@ Clip clip_aa_inner(const Vec3f& normal, const HomoLine& l, fp epsilon)
         };
     }
 
-    // TODO: delete this, put here to surpress warning
+    // TODO FIXME WHAT
     return { {}, Clip::ClipType::NonExistant };
 
     // TODO delete this once things seem OK

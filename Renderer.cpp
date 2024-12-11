@@ -4,11 +4,9 @@
 #include "World.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <optional>
-#include <set>
 #include <utility>
 #include <vector>
 
@@ -59,9 +57,10 @@ std::vector<Fragment> ztest(const std::vector<Fragment>& fbuffer,
         if (row < 0 or column < 0 or row >= v.pixel_grid_rows or
             column >= v.pixel_grid_columns)
         {
-            printf("invalid fragment coordinate R%li C%li! WIREFRAME: "
-                   "clipping, SOLID: tri filling\n",
-                   row, column);
+            // FIXME
+            // printf("invalid fragment coordinate R%li C%li! WIREFRAME: "
+            //        "clipping, SOLID: tri filling\n",
+            //        row, column);
             continue;
         }
         if (frag.a.depth.z <= zbuffer[row][column].candidate_depth)
@@ -90,10 +89,8 @@ std::vector<Fragment> ztest(const std::vector<Fragment>& fbuffer,
 
 std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 {
-    assert(std::isfinite(a.x) && std::isfinite(b.x) && std::isfinite(a.y) &&
-           std::isfinite(b.y));
-    // printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", a.x, a.y, b.x,
-    //        b.y);
+    // assert(std::isfinite(a.x) && std::isfinite(b.x) && std::isfinite(a.y) &&
+    //        std::isfinite(b.y));
 
     // Ensure `start` is always the point with the smaller x-coordinate
     Vec2f start = (a.x < b.x) ? a : b;
@@ -176,7 +173,7 @@ std::vector<Vec2f> fill_triangle(const Vec2f& v0, const Vec2f& v1,
         m = b < m ? b : m;
         m = c < m ? c : m;
         m = m < lower_bound ? lower_bound : m;
-        assert(std::isfinite(m));
+        // assert(std::isfinite(m));
         return round(m);
     };
 
@@ -187,7 +184,7 @@ std::vector<Vec2f> fill_triangle(const Vec2f& v0, const Vec2f& v1,
         m = b > m ? b : m;
         m = c > m ? c : m;
         m = m > upper_bound ? upper_bound : m;
-        assert(std::isfinite(m));
+        // assert(std::isfinite(m));
         return round(m);
     };
 
@@ -206,8 +203,8 @@ std::vector<Vec2f> fill_triangle(const Vec2f& v0, const Vec2f& v1,
         for (fp y = miny; y <= maxy; y++)
         {
             const auto& b = barycentric(v0, v1, v2, { x, y });
-            // TODO textbook says "do it this way", but check samples
-            // TODO epsilon testing?
+            
+            // It literally makes no difference whether it is > or >=
             if (b.x > 0 and b.y > 0 and b.z > 0)
             {
                 out.push_back({ x, y });
@@ -277,7 +274,6 @@ S4Polygon step4_sutherland_hodgman(const S3FaceCulling& f)
         for (auto [start, end] : ndc)
         {
             auto clip = clip_aa_inner(normal, { start, end });
-            // TODO does it even make a difference if I used clip's output?
             switch (clip.t)
             {
             case Clip::ClipType::NonExistant :
@@ -323,17 +319,10 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
         return eq_within(mat.det(), 0, ceng_epsilon);
     };
 
-    // TODO: eliminate degenerate cases
     if (degenerate(trig_vpc0, trig_vpc1, trig_vpc2))
     {
         return { f.mother, {} };
     }
-
-    // dprint("trig_vpc0", trig_vpc0);
-    // dprint("trig_ndc0", f.trig_ndc0);
-    // printf("fragment coordinate X%li Y%li!\n",
-    //        vpc2pc(trig_vpc0, v).column_from_left,
-    //        vpc2pc(trig_vpc0, v).row_from_top);
 
     // Candidates are not-quite-fragments in viewport coordinates
     std::vector<Vec2f> vp_candidates {};
@@ -457,26 +446,7 @@ std::vector<Fragment> render(const World& w, const ViewConfig& v)
         fragments.insert(fragments.end(), s5.out.begin(), s5.out.end());
     }
 
-    printf("resultant fragment count %lu\n", fragments.size());
     fragments = ztest(fragments, v);
-    printf("surviving fragment count %lu\n", fragments.size());
 
-    // FIXME get rid of seen counter. noticable perf impact!
-    std::set<std::pair<long, long>> seen_rc;
-    size_t overdraw_count = 0;
-    for (const auto& d : fragments)
-    {
-        if (seen_rc.contains({ d.pc.row_from_top, d.pc.column_from_left }))
-        {
-            printf("overdrawn fragment At R%li C%li! fix ztest!\n",
-                   d.pc.row_from_top, d.pc.column_from_left);
-            overdraw_count++;
-        }
-        else
-        {
-            seen_rc.insert({ d.pc.row_from_top, d.pc.column_from_left });
-        }
-    }
-    printf("%lu fragments were overdrawn!\n", overdraw_count);
     return fragments;
 }

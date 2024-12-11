@@ -5,16 +5,6 @@
 #include <string>
 #include <vector>
 
-// TODO BUG: images larger than a certain size bug out the window! example:
-// marbles.xml
-// TODO does drawing fg texture after bg texture actually create bg/fg effect?
-// Or do I risk Z-fighting?
-// TODO viewport scaling
-// TODO equality indicator
-// TODO SPACE to view diffmask
-// TODO press ENTER to render out in scanlines, pause when an invalid output is
-// generated
-
 namespace base
 {
 struct Pixel

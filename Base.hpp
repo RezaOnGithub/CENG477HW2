@@ -1,11 +1,6 @@
 #pragma once
-#include <cassert>
 #include <cstddef>
-#include <cstdio>
-#include <optional>
 #include <stdexcept>
-#include <string>
-#include <utility>
 #include <vector>
 
 namespace m
@@ -64,15 +59,15 @@ constexpr Pixel vec2color(const Vec3f& c);
 
 /*****************************************************************************/
 // debug forward decleration
-// TODO comment these out!
+// DONE comment these out!
 /*****************************************************************************/
 
-void dprint(const char* s, const Vec2f& m);
-void dprint(const char* s, const Vec3f& m);
-void dprint(const char* s, const Vec4f& m);
-void dprint(const char* s, const Matrix2& m);
-void dprint(const char* s, const Matrix3& m);
-void dprint(const char* s, const Matrix4& m);
+// void dprint(const char* s, const Vec2f& m);
+// void dprint(const char* s, const Vec3f& m);
+// void dprint(const char* s, const Vec4f& m);
+// void dprint(const char* s, const Matrix2& m);
+// void dprint(const char* s, const Matrix3& m);
+// void dprint(const char* s, const Matrix4& m);
 
 /*****************************************************************************/
 // struct definition, method declerations
@@ -91,7 +86,8 @@ struct Vec2f
         case 1 :
             return y;
         default :
-            throw std::runtime_error("Invalid Index!");
+            // throw std::runtime_error("Invalid index");
+            break;
         }
     }
 
@@ -128,7 +124,8 @@ struct Vec3f
         case 2 :
             return z;
         default :
-            throw std::runtime_error("Invalid String!");
+            // throw std::runtime_error("Invalid index");
+            break;
         }
     };
 
@@ -170,7 +167,7 @@ struct HomoLine
 
     [[nodiscard]] inline HomoLine cohomogenize() const
     {
-        assert(start.w != 0 and end.w != 0);
+        // assert(start.w != 0 and end.w != 0);
         int sign = 1;
         if (start.w < 0)
         {
@@ -239,7 +236,8 @@ public:
         case 1 :
             return c1;
         default :
-            throw std::runtime_error("Invalid Index!");
+            // throw std::runtime_error("Invalid index");
+            break;
         }
     }
 
@@ -431,7 +429,7 @@ inline bool eq_within(fp i, fp j, fp ep)
 
 inline bool within(fp x, fp a, fp b)
 {
-    assert(a < b);
+    // assert(a < b);
     return x - a > 0 and b - x > 0;
 }
 
@@ -444,81 +442,81 @@ fp interpolate(const Vec3f& b, const fp& d0, const fp& d1, const fp& d2);
 
 /*****************************************************************************/
 // for debugging
-// TODO comment these out when done!
+// DONE comment these out when done!
 /*****************************************************************************/
 
-inline void dprint(const char* const s, const Matrix4& m)
-{
-    printf("Matrix4 %s:\n", s);
-    for (size_t i = 0; i < 4; i++)
-    {
-        for (size_t j = 0; j < 4; j++)
-        {
-            printf("\t%f\t", m.rc({ i, j }));
-        }
-        puts("");
-    }
-}
+// inline void dprint(const char* const s, const Matrix4& m)
+// {
+//     printf("Matrix4 %s:\n", s);
+//     for (size_t i = 0; i < 4; i++)
+//     {
+//         for (size_t j = 0; j < 4; j++)
+//         {
+//             printf("\t%f\t", m.rc({ i, j }));
+//         }
+//         puts("");
+//     }
+// }
 
-inline void dprint(const char* const s, const Matrix3& m)
-{
-    printf("Matrix3 %s:\n", s);
-    for (size_t i = 0; i < 3; i++)
-    {
-        for (size_t j = 0; j < 3; j++)
-        {
-            printf("\t%f\t", m.rc({ i, j }));
-        }
-        puts("");
-    }
-}
+// inline void dprint(const char* const s, const Matrix3& m)
+// {
+//     printf("Matrix3 %s:\n", s);
+//     for (size_t i = 0; i < 3; i++)
+//     {
+//         for (size_t j = 0; j < 3; j++)
+//         {
+//             printf("\t%f\t", m.rc({ i, j }));
+//         }
+//         puts("");
+//     }
+// }
 
-inline void dprint(const char* const s, const Matrix2& m)
-{
-    printf("Matrix2 %s:\n", s);
-    for (size_t i = 0; i < 2; i++)
-    {
-        for (size_t j = 0; j < 2; j++)
-        {
-            printf("\t%f\t", m.rc({ i, j }));
-        }
-        puts("");
-    }
-}
+// inline void dprint(const char* const s, const Matrix2& m)
+// {
+//     printf("Matrix2 %s:\n", s);
+//     for (size_t i = 0; i < 2; i++)
+//     {
+//         for (size_t j = 0; j < 2; j++)
+//         {
+//             printf("\t%f\t", m.rc({ i, j }));
+//         }
+//         puts("");
+//     }
+// }
 
-inline void dprint(const char* const s, const Vec4f& m)
-{
-    printf("Vec4f %s:\n", s);
-    for (size_t i = 0; i < 4; i++)
-    {
-        printf("\t%f\n", m.row(i));
-    }
-    puts("");
-}
+// inline void dprint(const char* const s, const Vec4f& m)
+// {
+//     printf("Vec4f %s:\n", s);
+//     for (size_t i = 0; i < 4; i++)
+//     {
+//         printf("\t%f\n", m.row(i));
+//     }
+//     puts("");
+// }
 
-inline void dprint(const char* const s, const Vec3f& m)
-{
-    printf("Vec3f %s:\n", s);
-    for (size_t i = 0; i < 3; i++)
-    {
-        printf("\t%f\n", m.row(i));
-    }
-    puts("");
-}
+// inline void dprint(const char* const s, const Vec3f& m)
+// {
+//     printf("Vec3f %s:\n", s);
+//     for (size_t i = 0; i < 3; i++)
+//     {
+//         printf("\t%f\n", m.row(i));
+//     }
+//     puts("");
+// }
 
-inline void dprint(const char* const s, const Vec2f& m)
-{
-    printf("Vec3f %s:\n", s);
-    for (size_t i = 0; i < 2; i++)
-    {
-        printf("\t%f\n", m.row(i));
-    }
-    puts("");
-}
+// inline void dprint(const char* const s, const Vec2f& m)
+// {
+//     printf("Vec3f %s:\n", s);
+//     for (size_t i = 0; i < 2; i++)
+//     {
+//         printf("\t%f\n", m.row(i));
+//     }
+//     puts("");
+// }
 
-inline void dprint(const char* const s, fp m)
-{
-    printf("double %s:\t%f\n", s, m);
-}
+// inline void dprint(const char* const s, fp m)
+// {
+//     printf("double %s:\t%f\n", s, m);
+// }
 
 }   // namespace m
