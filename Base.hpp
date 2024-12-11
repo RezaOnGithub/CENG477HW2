@@ -104,6 +104,11 @@ struct Vec2f
     {
         return { x * s, y * s };
     }
+
+    Vec2f operator-(const Vec2f& v) const
+    {
+        return { x - v.x, y - v.y };
+    }
 };
 
 struct Vec3f

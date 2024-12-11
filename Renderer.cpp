@@ -246,7 +246,8 @@ S3FaceCulling step3_bfc(const S2Face& f, const ViewConfig& v)
         (v.t_projection * v.t_camera * v.gaze.homovector()).dehomogenize();
 
     fp dot_product = dot(ndc_gaze, normal);
-    if (v.cull_backface and dot_product >= 0)
+    if (v.cull_backface and dot_product >= 0 and
+        not eq_within(dot_product, 0.0, ceng_epsilon))
     {
         return { f.mother, true, f.ndc0, f.ndc1, f.ndc2 };
     }
@@ -311,11 +312,22 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     const Vec2f trig_vpc1 = tvp_and_dehomogenize_to_2d(f.trig_ndc1);
     const Vec2f trig_vpc2 = tvp_and_dehomogenize_to_2d(f.trig_ndc2);
 
+    auto degenerate = [](const Vec2f& v0, const Vec2f& v1,
+                         const Vec2f& v2) -> bool
+    {
+        Matrix3 mat = Matrix3::from_columns({
+            { 1,    1,    1    },
+            { v0.x, v1.x, v2.x },
+            { v0.y, v1.y, v2.y }
+        });
+        return eq_within(mat.det(), 0, ceng_epsilon);
+    };
+
     // TODO: eliminate degenerate cases
-    // if (cross(trig_vpc1 - trig_vpc0, trig_vpc2 - trig_vpc0) == 0)
-    // {
-    //     return { f.mother, {} };
-    // }
+    if (degenerate(trig_vpc0, trig_vpc1, trig_vpc2))
+    {
+        return { f.mother, {} };
+    }
 
     // dprint("trig_vpc0", trig_vpc0);
     // dprint("trig_ndc0", f.trig_ndc0);
