@@ -16,7 +16,7 @@ namespace m
 /*****************************************************************************/
 // Vec3f Methods
 /*****************************************************************************/
-double Vec3f::operator[](const size_t i) const
+fp Vec3f::operator[](const size_t i) const
 {
     switch (i)
     {
@@ -72,7 +72,7 @@ fp interpolate(const Vec3f& b, const fp& d0, const fp& d1, const fp& d2)
 // Vec4f Methods
 /*****************************************************************************/
 
-double Vec4f::operator[](const size_t i) const
+fp Vec4f::operator[](const size_t i) const
 {
     switch (i)
     {
