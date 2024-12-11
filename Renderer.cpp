@@ -176,7 +176,7 @@ std::vector<Vec2f> fill_triangle(const Vec2f& v0, const Vec2f& v1,
         m = b < m ? b : m;
         m = c < m ? c : m;
         m = m < lower_bound ? lower_bound : m;
-        assert(isfinite(m));
+        assert(std::isfinite(m));
         return round(m);
     };
 
@@ -187,7 +187,7 @@ std::vector<Vec2f> fill_triangle(const Vec2f& v0, const Vec2f& v1,
         m = b > m ? b : m;
         m = c > m ? c : m;
         m = m > upper_bound ? upper_bound : m;
-        assert(isfinite(m));
+        assert(std::isfinite(m));
         return round(m);
     };
 
@@ -240,12 +240,12 @@ S2Face step2_device(const S1Face& f, const ViewConfig& v)
 
 S3FaceCulling step3_bfc(const S2Face& f, const ViewConfig& v)
 {
-    Vec3f normal = surface_normal(f.mother.v0.wc, f.mother.v1.wc,
-                                  f.mother.v2.wc);
-    // Vec3f ndc_gaze =
-        // (v.t_camera.invert() * (v.t_projection * v.gaze.homovector())).dehomogenize();
+    Vec3f normal = surface_normal(f.ndc0.dehomogenize(), f.ndc1.dehomogenize(),
+                                  f.ndc2.dehomogenize());
+    Vec3f ndc_gaze =
+        (v.t_projection * v.t_camera * v.gaze.homovector()).dehomogenize();
 
-    fp dot_product = dot(v.gaze, normal);
+    fp dot_product = dot(ndc_gaze, normal);
     if (v.cull_backface and dot_product >= 0)
     {
         return { f.mother, true, f.ndc0, f.ndc1, f.ndc2 };
