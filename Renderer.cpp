@@ -152,20 +152,22 @@ S2Face step2_device(const S1Face& f, const ViewConfig& v)
     return { f.mother, ndc[0], ndc[1], ndc[2] };
 }
 
-S3Face step3_bfc(const S2Face& f, const ViewConfig& v)
+S3FaceCulling step3_bfc(const S2Face& f, const ViewConfig& v)
 {
-    // FIXME
-    Vec3f normal = surface_normal(f.cc0.dehomogenize(), f.cc1.dehomogenize(),
-                                  f.cc2.dehomogenize());
-    fp dot_product = dot(v.gaze, normal);
+    Vec3f normal = surface_normal(f.ndc0.dehomogenize(), f.ndc1.dehomogenize(),
+                                  f.ndc2.dehomogenize());
+    Vec3f ndc_gaze =
+        (v.t_camera * (v.t_projection * v.gaze.homovector())).dehomogenize();
+
+    fp dot_product = dot(ndc_gaze, normal);
     if (v.cull_backface and dot_product >= 0)
     {
-        return { f.mother, true, f.cc0, f.cc1, f.cc2 };
+        return { f.mother, true, f.ndc0, f.ndc1, f.ndc2 };
     }
-    return { f.mother, false, f.cc0, f.cc1, f.cc2 };
+    return { f.mother, false, f.ndc0, f.ndc1, f.ndc2 };
 }
 
-S4Polygon step4_sutherland_hodgman(const S3Face& f)
+S4Polygon step4_sutherland_hodgman(const S3FaceCulling& f)
 {
     using m::Clip;
     const std::vector<Vec3f> plane_normals {

@@ -17,10 +17,10 @@ struct S1Face
 struct S2Face
 {
     WorldFace mother;
-    m::Vec4f cc0, cc1, cc2;
+    m::Vec4f ndc0, ndc1, ndc2;
 };
 
-struct S3Face
+struct S3FaceCulling
 {
     WorldFace mother;
     bool bfc_cullable;
