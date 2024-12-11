@@ -462,7 +462,7 @@ Clip clip_aa_inner(const Vec3f& normal, const HomoLine& l, fp epsilon)
     // Trivial Failure: both points on the "negative" side
     if (start_subs < -ceng_epsilon and end_subs < -ceng_epsilon)
     {
-        puts("Trivial Failure!");
+        // puts("Trivial Failure!");
         return { {}, Clip::ClipType::NonExistant };
     }
 
