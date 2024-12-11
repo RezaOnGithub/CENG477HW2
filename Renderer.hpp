@@ -59,6 +59,6 @@ struct S5Raster
 }   // namespace renderer
 
 // All-in-one
-std::vector<std::vector<m::Pixel>> render(const World& w, const ViewConfig& v);
+std::vector<renderer::Fragment> render(const World& w, const ViewConfig& v);
 std::vector<std::vector<std::vector<m::Pixel>>>
     render_layers(const World& w, const ViewConfig& v);

@@ -23,8 +23,8 @@ constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
 {
     // observation: round()-ing vpcs snaps them to the correct pixel (hopefully)
 
-    fp row_from_top = vpc.x;
-    fp column_from_left = v.pixel_grid_rows - vpc.y;
+    fp row_from_top = v.pixel_grid_rows - vpc.y;
+    fp column_from_left = vpc.x;
     // printf("Half-a-row %lf\n", (static_cast<fp>(v.pixel_grid_rows) / 2.0));
     // printf("Half-a-col %lf\n", (static_cast<fp>(v.pixel_grid_columns)
     // / 2.0)); printf("ROW: %lf\t%lf\t%li\n", vpc.y, row_from_top,
@@ -92,8 +92,8 @@ std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 {
     assert(std::isfinite(a.x) && std::isfinite(b.x) && std::isfinite(a.y) &&
            std::isfinite(b.y));
-    printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", a.x, a.y, b.x,
-           b.y);
+    // printf("Drawing a line from (%lf, %lf) to (%lf, %lf)\n", a.x, a.y, b.x,
+    //        b.y);
 
     // Ensure `start` is always the point with the smaller x-coordinate
     Vec2f start = (a.x < b.x) ? a : b;
@@ -208,7 +208,7 @@ std::vector<Vec2f> fill_triangle(const Vec2f& v0, const Vec2f& v1,
             const auto& b = barycentric(v0, v1, v2, { x, y });
             // TODO textbook says "do it this way", but check samples
             // TODO epsilon testing?
-            if (b.x >= 0 and b.y >= 0 and b.z >= 0)
+            if (b.x > 0 and b.y > 0 and b.z > 0)
             {
                 out.push_back({ x, y });
             }
@@ -240,12 +240,12 @@ S2Face step2_device(const S1Face& f, const ViewConfig& v)
 
 S3FaceCulling step3_bfc(const S2Face& f, const ViewConfig& v)
 {
-    Vec3f normal = surface_normal(f.ndc0.dehomogenize(), f.ndc1.dehomogenize(),
-                                  f.ndc2.dehomogenize());
-    Vec3f ndc_gaze =
-        (v.t_camera * (v.t_projection * v.gaze.homovector())).dehomogenize();
+    Vec3f normal = surface_normal(f.mother.v0.wc, f.mother.v1.wc,
+                                  f.mother.v2.wc);
+    // Vec3f ndc_gaze =
+        // (v.t_camera.invert() * (v.t_projection * v.gaze.homovector())).dehomogenize();
 
-    fp dot_product = dot(ndc_gaze, normal);
+    fp dot_product = dot(v.gaze, normal);
     if (v.cull_backface and dot_product >= 0)
     {
         return { f.mother, true, f.ndc0, f.ndc1, f.ndc2 };
@@ -425,13 +425,10 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
 }
 
 // Rasterize every triangle, perform depth test, write to an output buffer
-std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
+std::vector<Fragment> render(const World& w, const ViewConfig& v)
 {
     std::vector<Fragment> fragments {};
-    std::vector pbuffer(v.pixel_grid_rows,
-                        std::vector(v.pixel_grid_columns, v.bg_color));
 
-    std::vector<std::vector<Fragment>> debug_ls {};
     // rasterize every triangle in the scene
     for (size_t i = 0; i < w.face_count(); i++)
     {
@@ -445,7 +442,6 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
         }
         const auto& s4 = step4_sutherland_hodgman(s3);
         const auto& s5 = step5_rasterize(s4, v);
-        debug_ls.push_back(s5.out);
         fragments.insert(fragments.end(), s5.out.begin(), s5.out.end());
     }
 
@@ -453,7 +449,6 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
     fragments = ztest(fragments, v);
     printf("surviving fragment count %lu\n", fragments.size());
 
-    // turn surviving fragments into pixels
     // FIXME get rid of seen counter. noticable perf impact!
     std::set<std::pair<long, long>> seen_rc;
     size_t overdraw_count = 0;
@@ -461,17 +456,15 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
     {
         if (seen_rc.contains({ d.pc.row_from_top, d.pc.column_from_left }))
         {
-            // printf("overdrawn fragment At R%li C%li! fix ztest!\n",
-            //        d.pc.row_from_top, d.pc.column_from_left);
+            printf("overdrawn fragment At R%li C%li! fix ztest!\n",
+                   d.pc.row_from_top, d.pc.column_from_left);
             overdraw_count++;
         }
         else
         {
             seen_rc.insert({ d.pc.row_from_top, d.pc.column_from_left });
         }
-        pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
-            m::vec2color(d.a.ceng477_color);
     }
     printf("%lu fragments were overdrawn!\n", overdraw_count);
-    return pbuffer;
+    return fragments;
 }
