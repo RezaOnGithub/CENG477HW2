@@ -36,23 +36,56 @@ constexpr PixelCoordinate vpc2pc(const Vec2f& vpc, const ViewConfig& v)
     };
 }
 
-// // TODO this is completely wrong. Use a zfail approach!
-// std::vector<Fragment> ztest(std::vector<std::vector<float>>& zbuffer,
-//                             const std::vector<Fragment>& fbuffer)
-// {
-//     std::vector<Fragment> out {};
-//     for (auto frag : fbuffer)
-//     {
-//         const size_t row = frag.pc.row_from_top;
-//         const size_t column = frag.pc.column_from_left;
-//         if (zbuffer[row][column] > frag.attrib.depth)
-//         {
-//             out.push_back(frag);
-//             zbuffer[row][column] = frag.attrib.depth;
-//         }
-//     }
-//     return out;
-// }
+std::vector<Fragment> ztest(const std::vector<Fragment>& fbuffer,
+                            const ViewConfig& v)
+{
+    struct ZAttrib
+    {
+        float candidate_depth;
+        std::optional<size_t> candidate_index;
+    };
+
+    std::vector zbuffer(v.pixel_grid_rows,
+                        std::vector(v.pixel_grid_columns, ZAttrib(1.0, {})));
+
+    long changed = 0;
+
+    for (size_t fragi = 0; fragi < fbuffer.size(); fragi++)
+    {
+        const Fragment& frag = fbuffer[fragi];
+        const long row = frag.pc.row_from_top;
+        const long column = frag.pc.column_from_left;
+        if (row < 0 or column < 0 or row >= v.pixel_grid_rows or
+            column >= v.pixel_grid_columns)
+        {
+            // FIXME will clipping ever work ?!
+            printf("invalid fragment coordinate R%li C%li! Fix clipping!\n",
+                   row, column);
+            continue;
+        }
+        if (frag.a.depth.z <= zbuffer[row][column].candidate_depth)
+        {
+            changed++;
+            zbuffer[row][column] = { static_cast<float>(frag.a.depth.z),
+                                     { fragi } };
+        }
+    }
+
+    std::vector<Fragment> out {};
+    out.reserve(fbuffer.size());
+    for (const auto& zfrag_row : zbuffer)
+    {
+        for (const auto& zfrag : zfrag_row)
+        {
+            if (zfrag.candidate_index.has_value())
+            {
+                const size_t i = zfrag.candidate_index.value();
+                out.push_back(fbuffer[i]);
+            }
+        }
+    }
+    return out;
+}
 
 std::vector<Vec2f> midpoint_algorithm(Vec2f a, Vec2f b)
 {
@@ -256,9 +289,11 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     Fragment::Attribute a1 {};
     Fragment::Attribute a2 {};
 
-    auto ndc2depth = [](const fp x) -> fp
+    auto ndc2depth = [](const Vec4f& ndc) -> Vec3f
     {
-        return (x + 1) / 2.0;
+        auto z = ndc.dehomogenize().z;
+        auto depth = (z + 1) / 2.0;
+        return { 0, 0, depth };
     };
 
     a0.ceng477_color = { static_cast<fp>(f.mother.v0.ceng477_color.r),
@@ -270,36 +305,38 @@ S5Raster step5_rasterize(const S4Polygon& f, const ViewConfig& v)
     a2.ceng477_color = { static_cast<fp>(f.mother.v2.ceng477_color.r),
                          static_cast<fp>(f.mother.v2.ceng477_color.g),
                          static_cast<fp>(f.mother.v2.ceng477_color.b) };
-    a0.depth = { 0, 0, ndc2depth(f.trig_ndc0.z) };
-    a1.depth = { 0, 0, ndc2depth(f.trig_ndc1.z) };
-    a2.depth = { 0, 0, ndc2depth(f.trig_ndc2.z) };
+    a0.depth = ndc2depth(f.trig_ndc0);
+    a1.depth = ndc2depth(f.trig_ndc1);
+    a2.depth = ndc2depth(f.trig_ndc2);
 
-    auto perspective_correct = [&](const Vec2f vpp, const Vec3f& c0,
-                                   const Vec3f& c1, const Vec3f& c2) -> Vec3f
-    {
-        Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
-        b.x = std::max(0.F, std::min(1.F, static_cast<float>(b.x)));
-        b.y = std::max(0.F, std::min(1.F, static_cast<float>(b.y)));
-        b.z = std::max(0.F, std::min(1.F, static_cast<float>(b.z)));
+    // auto perspective_correct = [&](const Vec2f vpp, const Vec3f& c0,
+    //                                const Vec3f& c1, const Vec3f& c2) -> Vec3f
+    // {
+    //     Vec3f b = barycentric(trig_vpc0, trig_vpc1, trig_vpc2, vpp);
+    //     b.x = std::max(0.F, std::min(1.F, static_cast<float>(b.x)));
+    //     b.y = std::max(0.F, std::min(1.F, static_cast<float>(b.y)));
+    //     b.z = std::max(0.F, std::min(1.F, static_cast<float>(b.z)));
 
-        const Vec3f w_reciprocal = { 1.0 / f.trig_ndc0.w, 1.0 / f.trig_ndc1.w,
-                                     1.0 / f.trig_ndc2.w };
+    //     const Vec3f w_reciprocal = { 1.0 / f.trig_ndc0.w, 1.0 /
+    //     f.trig_ndc1.w,
+    //                                  1.0 / f.trig_ndc2.w };
 
-        const Vec3f c0_div_w = c0.scale(w_reciprocal.x);
-        const Vec3f c1_div_w = c1.scale(w_reciprocal.y);
-        const Vec3f c2_div_w = c2.scale(w_reciprocal.z);
+    //     const Vec3f c0_div_w = c0.scale(w_reciprocal.x);
+    //     const Vec3f c1_div_w = c1.scale(w_reciprocal.y);
+    //     const Vec3f c2_div_w = c2.scale(w_reciprocal.z);
 
-        // Perform component-wise barycentric interpolation
-        Vec3f interpolated = {
-            b.x * c0_div_w.x + b.y * c1_div_w.x + b.z * c2_div_w.x,
-            b.x * c0_div_w.y + b.y * c1_div_w.y + b.z * c2_div_w.y,
-            b.x * c0_div_w.z + b.y * c1_div_w.z + b.z * c2_div_w.z,
-        };
+    //     // Perform component-wise barycentric interpolation
+    //     Vec3f interpolated = {
+    //         b.x * c0_div_w.x + b.y * c1_div_w.x + b.z * c2_div_w.x,
+    //         b.x * c0_div_w.y + b.y * c1_div_w.y + b.z * c2_div_w.y,
+    //         b.x * c0_div_w.z + b.y * c1_div_w.z + b.z * c2_div_w.z,
+    //     };
 
-        fp interpolated_w =
-            b.x * w_reciprocal.x + b.y * w_reciprocal.y + b.z * w_reciprocal.z;
-        return interpolated.scale(1.F / interpolated_w);
-    };
+    //     fp interpolated_w =
+    //         b.x * w_reciprocal.x + b.y * w_reciprocal.y + b.z *
+    //         w_reciprocal.z;
+    //     return interpolated.scale(1.F / interpolated_w);
+    // };
 
     std::vector<Fragment> frag {};
     for (auto vpp : vp_candidates)
@@ -349,48 +386,32 @@ std::vector<std::vector<Pixel>> render(const World& w, const ViewConfig& v)
     }
 
     printf("resultant fragment count %lu\n", fragments.size());
+    fragments = ztest(fragments, v);
+    printf("surviving fragment count %lu\n", fragments.size());
 
     // turn surviving fragments into pixels
-    std::vector<long> seen_x {};
-    std::vector<long> seen_y {};
+    std::vector<PixelCoordinate> seen_pc;
+    seen_pc.reserve(fragments.size());
     for (const auto& d : fragments)
     {
-        auto color = [](const Vec3f& c) -> Pixel
+        if (std::ranges::find_if(seen_pc,
+                                 [&](PixelCoordinate spc)
+                                 {
+                                     return spc.column_from_left ==
+                                                d.pc.column_from_left and
+                                            spc.row_from_top ==
+                                                d.pc.row_from_top;
+                                 }) != seen_pc.end())
         {
-            return { static_cast<unsigned char>(c.x > 255 ? 255 :
-                                                c.x < 0   ? 0 :
-                                                            c.x),
-                     static_cast<unsigned char>(c.y > 255 ? 255 :
-                                                c.y < 0   ? 0 :
-                                                            c.y),
-                     static_cast<unsigned char>(c.z > 255 ? 255 :
-                                                c.z < 0   ? 0 :
-                                                            c.z) };
-        };
-
-        // FIXME comment out these sanity checks at some point
-
-        if (d.pc.row_from_top < 0 || d.pc.column_from_left < 0 ||
-            d.pc.row_from_top >= v.pixel_grid_rows ||
-            d.pc.column_from_left >= v.pixel_grid_columns)
-        {
-            printf("invalid fragment coordinate %li %li!\n",
-                   d.pc.column_from_left, d.pc.row_from_top);
-            continue;
+            printf("overdrawn fragment At R%li C%li! fix ztest!\n",
+                   d.pc.row_from_top, d.pc.column_from_left);
         }
-        if (std::ranges::find(seen_x, d.pc.column_from_left) != seen_x.end())
+        else
         {
-            if (std::ranges::find(seen_y, d.pc.row_from_top) != seen_y.end())
-            {
-                // FIXME yeah yeah overdraw
-                // printf("OVERDRAW! At %lu %lu\n", d.pc.column_from_left,
-                // d.pc.row_from_top);
-            }
+            seen_pc.push_back(d.pc);
         }
-        seen_x.push_back(d.pc.column_from_left);
-        seen_y.push_back(d.pc.row_from_top);
         pbuffer[d.pc.column_from_left][d.pc.row_from_top] =
-            color(d.a.ceng477_color);
+            m::vec2color(d.a.ceng477_color);
     }
 
     return pbuffer;
