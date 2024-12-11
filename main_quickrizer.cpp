@@ -1,3 +1,4 @@
+#include "Base.hpp"
 #include "CENG477.hpp"
 #include "Renderer.hpp"
 #include "World.hpp"
@@ -10,8 +11,8 @@
 #include <string>
 #include <vector>
 
-void write_image(const char* filename, unsigned char* data, int width,
-                 int height);
+void write_image(const char* filename, unsigned char* data, long width,
+                 long height);
 
 int main(int argc, char** argv)
 {
@@ -23,24 +24,33 @@ int main(int argc, char** argv)
     }
 
     const char* xmlPath = argv[1];
-    const ceng::Scene& scene = ceng::Scene(xmlPath);
+    ceng::Scene scene = ceng::Scene(xmlPath);
+    for (auto m: scene.meshes) {
+        m->type = 0;
+    }
     const World& w = World(scene);
     const std::vector<ViewConfig>& views = extract_views(scene);
 
-    for (auto v : views)
+    for (const auto &v : views)
     {
-        auto img = render(w, v);
-        auto* data =
-            new unsigned char[v.pixel_grid_rows * v.pixel_grid_columns * 3];
-        for (size_t i = 0; i < v.pixel_grid_rows; i++)
+        const auto& fragments = render(w, v);
+        const size_t pixel_count = v.pixel_grid_rows * v.pixel_grid_columns;
+        auto* data = new unsigned char[pixel_count * 3];
+        for (size_t x = 0; x < pixel_count; x++)
         {
-            for (size_t j = 0; j < v.pixel_grid_columns; j++)
-            {
-                const size_t base_index = (i * v.pixel_grid_columns + j) * 3;
-                data[base_index + 0] = img[i][j].r;
-                data[base_index + 1] = img[i][j].g;
-                data[base_index + 2] = img[i][j].b;
-            }
+            data[x * 3 + 0] = v.bg_color.r;
+            data[x * 3 + 1] = v.bg_color.g;
+            data[x * 3 + 2] = v.bg_color.b;
+        }
+        for (const auto& frag : fragments)
+        {
+            const size_t pixel_index =
+                frag.pc.row_from_top * v.pixel_grid_columns +
+                frag.pc.column_from_left;
+            const m::Pixel c = m::vec2color(frag.a.ceng477_color);
+            data[pixel_index * 3 + 0] = c.r;
+            data[pixel_index * 3 + 1] = c.g;
+            data[pixel_index * 3 + 2] = c.b;
         }
         std::string name = v.filename.substr(0, v.filename.size() - 2) + "ng";
         write_image(name.c_str(), data, v.pixel_grid_columns,
@@ -52,10 +62,9 @@ int main(int argc, char** argv)
 }
 
 // NOLINTBEGIN
-//  Code copied straight from raytracer
 
-void write_image(const char* filename, unsigned char* data, int width,
-                 int height)
+void write_image(const char* filename, unsigned char* data, long width,
+                 long height)
 {
     stbi_write_png(filename, width, height, 3, data, width * 3);
 }
